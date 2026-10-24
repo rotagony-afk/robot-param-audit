@@ -3,6 +3,7 @@ pytest-tmp/
 .pytest-tmp/
 pytest-cache-files-*/
 audit-out/
+audit-app/
 *.bak
 __pycache__/
 *.pyc
