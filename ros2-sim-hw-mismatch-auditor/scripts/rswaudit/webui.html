@@ -116,6 +116,11 @@
       <div><label>目标点 x,y,z（机械臂）</label><input type="text" id="target" placeholder="0.45,0,0.30"></div>
     </div>
 
+    <label style="display:flex; align-items:center; gap:6px; margin-top:12px; color:var(--ink); font-size:13px;">
+      <input type="checkbox" id="simulink" style="width:auto; margin:0;">
+      同时导出 Simulink 模型包（.m 构建脚本 + .mdl + params.m）
+    </label>
+
     <button id="run">运行诊断</button>
     <button class="ghost" id="clear">清空本会话文件</button>
     <div class="status" id="status">等待上传模型…</div>
@@ -127,6 +132,7 @@
     <div id="summary" class="chips"></div>
     <div id="findings"><div class="empty">上传模型后点“运行诊断”。</div></div>
     <div class="files" id="files"></div>
+    <div id="simulinkBox"></div>
     <div id="notes" class="hint"></div>
     <details id="reportBox" style="display:none;">
       <summary>完整报告 report.md</summary>
@@ -202,6 +208,65 @@ function num(id) {
   return raw === "" ? null : Number(raw);
 }
 
+function renderSimulink(data) {
+  var box = q("simulinkBox");
+  var files = (data.artifacts || []).filter(function (n) { return n.indexOf("simulink/") === 0; });
+  if (!data.has_simulink || !files.length) { box.innerHTML = ""; return; }
+  var scripts = files.filter(function (n) { return n.indexOf("simulink/build_rsw_") === 0; });
+  var html = '<div class="finding INFO" style="margin-top:14px;"><div class="head">' +
+             '<span class="rule">Simulink</span><span class="title">已生成模型包（' + files.length + ' 个文件）</span></div>' +
+             '<div class="meta">工具只生成模型；真正的仿真要在 MATLAB 里运行。下面这个按钮会调用本机 MATLAB 执行构建脚本。</div>' +
+             '<div class="ev">' + files.map(function (n) {
+               var enc = n.split("/").map(encodeURIComponent).join("/");
+               return '<div><a href="/out/' + data.session + "/" + enc + "?token=" + TOKEN +
+                      '" target="_blank">' + esc(n.replace("simulink/", "")) + "</a></div>";
+             }).join("") + "</div>";
+  if (scripts.length) {
+    html += '<button id="runMatlab" style="margin-top:10px;">用本机 MATLAB 构建并运行</button>' +
+            '<pre id="matlabOut" style="display:none;"></pre>';
+  }
+  html += "</div>";
+  box.innerHTML = html;
+  if (scripts.length) {
+    var script = scripts[0].replace("simulink/", "");
+    var btn = q("runMatlab");
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+      btn.textContent = "MATLAB 正在运行（首次启动可能要 1 分钟）…";
+      fetch(api("/api/matlab"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-RSW-Token": TOKEN },
+        body: JSON.stringify({ script: script })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        btn.disabled = false;
+        btn.textContent = "用本机 MATLAB 构建并运行";
+        var out = q("matlabOut");
+        out.style.display = "block";
+        if (res.error) { out.textContent = "[错误] " + res.error; return; }
+        var lines = [];
+        lines.push((res.ok ? "[成功] " : "[失败] ") +
+          (res.slx && res.slx.length ? "已生成 " + res.slx.join(", ") : "未生成 .slx"));
+        var sig = res.signals || {};
+        var keys = Object.keys(sig);
+        if (keys.length) {
+          lines.push("");
+          lines.push("仿真末值（sim 跑完后的记录信号）：");
+          lines.push(keys.map(function (k) { return k + " = " + sig[k]; }).join("   "));
+        }
+        lines.push("");
+        lines.push(res.output || "");
+        out.textContent = lines.join("\n");
+      }).catch(function (err) {
+        btn.disabled = false;
+        btn.textContent = "用本机 MATLAB 构建并运行";
+        var out = q("matlabOut");
+        out.style.display = "block";
+        out.textContent = "[错误] " + err;
+      });
+    });
+  }
+}
+
 function render(data) {
   const s = data.summary;
   const chips = [
@@ -244,12 +309,14 @@ function render(data) {
     }).join("");
   }
   q("files").innerHTML = (data.artifacts || []).map(function (name) {
-    return '<a href="/out/' + data.session + "/" + encodeURIComponent(name) +
+    var encoded = name.split("/").map(encodeURIComponent).join("/");
+    return '<a href="/out/' + data.session + "/" + encoded +
            "?token=" + TOKEN + '" target="_blank">' + esc(name) + "</a>";
   }).join("");
   q("notes").innerHTML = (data.notes || []).map(function (n) {
     return "<div>· " + esc(n) + "</div>";
   }).join("");
+  renderSimulink(data);
   q("report").textContent = data.report || "";
   q("reportBox").style.display = "block";
 }
@@ -265,7 +332,8 @@ q("run").addEventListener("click", function () {
     speed: num("speed") || 0.3, yaw_rate: num("yawRate") || 0,
     lateral: num("lateral") || 0, density: num("density"),
     used_radius: num("usedRadius"), used_track: num("usedTrack"),
-    payload: num("payload") || 0, target: q("target").value.trim()
+    payload: num("payload") || 0, target: q("target").value.trim(),
+    simulink: q("simulink").checked
   };
   fetch(api("/api/run"), {
     method: "POST",

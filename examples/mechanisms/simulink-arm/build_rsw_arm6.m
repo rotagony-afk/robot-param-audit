@@ -20,6 +20,7 @@ function build_rsw_arm6()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_q_1'], 'InitialCondition', '0', 'Position', [790 80 870 120]);
     add_block('simulink/Discontinuities/Saturation', [model '/' 'sat_1'], 'UpperLimit', '2.96706', 'LowerLimit', '-2.96706', 'Position', [940 80 1020 120]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_q1'], 'Position', [1090 80 1170 120]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_q1'], 'VariableName', 'q1', 'SaveFormat', 'Array', 'Position', [1240 80 1320 120]);
     add_block('simulink/Sources/Step', [model '/' 'tau_2'], 'Time', '0.1', 'Before', '0', 'After', '1', 'Position', [40 150 120 190]);
     add_block('simulink/Math Operations/Sum', [model '/' 'sum_2'], 'Inputs', '+-', 'Position', [190 150 270 190]);
     add_block('simulink/Math Operations/Gain', [model '/' 'gain_j_2'], 'Gain', '1.666667', 'Position', [340 150 420 190]);
@@ -28,6 +29,7 @@ function build_rsw_arm6()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_q_2'], 'InitialCondition', '0', 'Position', [790 150 870 190]);
     add_block('simulink/Discontinuities/Saturation', [model '/' 'sat_2'], 'UpperLimit', '1.919862', 'LowerLimit', '-1.919862', 'Position', [940 150 1020 190]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_q2'], 'Position', [1090 150 1170 190]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_q2'], 'VariableName', 'q2', 'SaveFormat', 'Array', 'Position', [1240 150 1320 190]);
     add_block('simulink/Sources/Step', [model '/' 'tau_3'], 'Time', '0.1', 'Before', '0', 'After', '1', 'Position', [40 220 120 260]);
     add_block('simulink/Math Operations/Sum', [model '/' 'sum_3'], 'Inputs', '+-', 'Position', [190 220 270 260]);
     add_block('simulink/Math Operations/Gain', [model '/' 'gain_j_3'], 'Gain', '4.545455', 'Position', [340 220 420 260]);
@@ -36,6 +38,7 @@ function build_rsw_arm6()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_q_3'], 'InitialCondition', '0', 'Position', [790 220 870 260]);
     add_block('simulink/Discontinuities/Saturation', [model '/' 'sat_3'], 'UpperLimit', '2.617994', 'LowerLimit', '-2.617994', 'Position', [940 220 1020 260]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_q3'], 'Position', [1090 220 1170 260]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_q3'], 'VariableName', 'q3', 'SaveFormat', 'Array', 'Position', [1240 220 1320 260]);
     add_block('simulink/Sources/Step', [model '/' 'tau_4'], 'Time', '0.1', 'Before', '0', 'After', '1', 'Position', [40 290 120 330]);
     add_block('simulink/Math Operations/Sum', [model '/' 'sum_4'], 'Inputs', '+-', 'Position', [190 290 270 330]);
     add_block('simulink/Math Operations/Gain', [model '/' 'gain_j_4'], 'Gain', '16.666667', 'Position', [340 290 420 330]);
@@ -44,6 +47,7 @@ function build_rsw_arm6()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_q_4'], 'InitialCondition', '0', 'Position', [790 290 870 330]);
     add_block('simulink/Discontinuities/Saturation', [model '/' 'sat_4'], 'UpperLimit', '3.141593', 'LowerLimit', '-3.141593', 'Position', [940 290 1020 330]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_q4'], 'Position', [1090 290 1170 330]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_q4'], 'VariableName', 'q4', 'SaveFormat', 'Array', 'Position', [1240 290 1320 330]);
     add_block('simulink/Sources/Step', [model '/' 'tau_5'], 'Time', '0.1', 'Before', '0', 'After', '1', 'Position', [40 360 120 400]);
     add_block('simulink/Math Operations/Sum', [model '/' 'sum_5'], 'Inputs', '+-', 'Position', [190 360 270 400]);
     add_block('simulink/Math Operations/Gain', [model '/' 'gain_j_5'], 'Gain', '66.666667', 'Position', [340 360 420 400]);
@@ -52,6 +56,7 @@ function build_rsw_arm6()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_q_5'], 'InitialCondition', '0', 'Position', [790 360 870 400]);
     add_block('simulink/Discontinuities/Saturation', [model '/' 'sat_5'], 'UpperLimit', '2.094395', 'LowerLimit', '-2.094395', 'Position', [940 360 1020 400]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_q5'], 'Position', [1090 360 1170 400]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_q5'], 'VariableName', 'q5', 'SaveFormat', 'Array', 'Position', [1240 360 1320 400]);
     add_block('simulink/Sources/Step', [model '/' 'tau_6'], 'Time', '0.1', 'Before', '0', 'After', '1', 'Position', [40 430 120 470]);
     add_block('simulink/Math Operations/Sum', [model '/' 'sum_6'], 'Inputs', '+-', 'Position', [190 430 270 470]);
     add_block('simulink/Math Operations/Gain', [model '/' 'gain_j_6'], 'Gain', '50', 'Position', [340 430 420 470]);
@@ -60,7 +65,9 @@ function build_rsw_arm6()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_q_6'], 'InitialCondition', '0', 'Position', [790 430 870 470]);
     add_block('simulink/Discontinuities/Saturation', [model '/' 'sat_6'], 'UpperLimit', '3.141593', 'LowerLimit', '-3.141593', 'Position', [940 430 1020 470]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_q6'], 'Position', [1090 430 1170 470]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_q6'], 'VariableName', 'q6', 'SaveFormat', 'Array', 'Position', [1240 430 1320 470]);
 
+    add_line(model, 'sat_1/1', 'ws_q1/1', 'autorouting', 'on');
     add_line(model, 'tau_1/1', 'sum_1/1', 'autorouting', 'on');
     add_line(model, 'integ_w_1/1', 'gain_b_1/1', 'autorouting', 'on');
     add_line(model, 'gain_b_1/1', 'sum_1/2', 'autorouting', 'on');
@@ -69,6 +76,7 @@ function build_rsw_arm6()
     add_line(model, 'integ_w_1/1', 'integ_q_1/1', 'autorouting', 'on');
     add_line(model, 'integ_q_1/1', 'sat_1/1', 'autorouting', 'on');
     add_line(model, 'sat_1/1', 'scope_q1/1', 'autorouting', 'on');
+    add_line(model, 'sat_2/1', 'ws_q2/1', 'autorouting', 'on');
     add_line(model, 'tau_2/1', 'sum_2/1', 'autorouting', 'on');
     add_line(model, 'integ_w_2/1', 'gain_b_2/1', 'autorouting', 'on');
     add_line(model, 'gain_b_2/1', 'sum_2/2', 'autorouting', 'on');
@@ -77,6 +85,7 @@ function build_rsw_arm6()
     add_line(model, 'integ_w_2/1', 'integ_q_2/1', 'autorouting', 'on');
     add_line(model, 'integ_q_2/1', 'sat_2/1', 'autorouting', 'on');
     add_line(model, 'sat_2/1', 'scope_q2/1', 'autorouting', 'on');
+    add_line(model, 'sat_3/1', 'ws_q3/1', 'autorouting', 'on');
     add_line(model, 'tau_3/1', 'sum_3/1', 'autorouting', 'on');
     add_line(model, 'integ_w_3/1', 'gain_b_3/1', 'autorouting', 'on');
     add_line(model, 'gain_b_3/1', 'sum_3/2', 'autorouting', 'on');
@@ -85,6 +94,7 @@ function build_rsw_arm6()
     add_line(model, 'integ_w_3/1', 'integ_q_3/1', 'autorouting', 'on');
     add_line(model, 'integ_q_3/1', 'sat_3/1', 'autorouting', 'on');
     add_line(model, 'sat_3/1', 'scope_q3/1', 'autorouting', 'on');
+    add_line(model, 'sat_4/1', 'ws_q4/1', 'autorouting', 'on');
     add_line(model, 'tau_4/1', 'sum_4/1', 'autorouting', 'on');
     add_line(model, 'integ_w_4/1', 'gain_b_4/1', 'autorouting', 'on');
     add_line(model, 'gain_b_4/1', 'sum_4/2', 'autorouting', 'on');
@@ -93,6 +103,7 @@ function build_rsw_arm6()
     add_line(model, 'integ_w_4/1', 'integ_q_4/1', 'autorouting', 'on');
     add_line(model, 'integ_q_4/1', 'sat_4/1', 'autorouting', 'on');
     add_line(model, 'sat_4/1', 'scope_q4/1', 'autorouting', 'on');
+    add_line(model, 'sat_5/1', 'ws_q5/1', 'autorouting', 'on');
     add_line(model, 'tau_5/1', 'sum_5/1', 'autorouting', 'on');
     add_line(model, 'integ_w_5/1', 'gain_b_5/1', 'autorouting', 'on');
     add_line(model, 'gain_b_5/1', 'sum_5/2', 'autorouting', 'on');
@@ -101,6 +112,7 @@ function build_rsw_arm6()
     add_line(model, 'integ_w_5/1', 'integ_q_5/1', 'autorouting', 'on');
     add_line(model, 'integ_q_5/1', 'sat_5/1', 'autorouting', 'on');
     add_line(model, 'sat_5/1', 'scope_q5/1', 'autorouting', 'on');
+    add_line(model, 'sat_6/1', 'ws_q6/1', 'autorouting', 'on');
     add_line(model, 'tau_6/1', 'sum_6/1', 'autorouting', 'on');
     add_line(model, 'integ_w_6/1', 'gain_b_6/1', 'autorouting', 'on');
     add_line(model, 'gain_b_6/1', 'sum_6/2', 'autorouting', 'on');
@@ -113,5 +125,5 @@ function build_rsw_arm6()
     target = fullfile(here, [model '.slx']);
     save_system(model, target);
     fprintf('已生成: %s\n', target);
-    fprintf('模块数: %d, 连线数: %d\n', 48, 48);
+    fprintf('模块数: %d, 连线数: %d\n', 54, 54);
 end

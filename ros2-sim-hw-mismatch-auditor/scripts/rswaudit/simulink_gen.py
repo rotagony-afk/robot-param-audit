@@ -42,6 +42,7 @@ SI = {
     "fcn": "simulink/User-Defined Functions/Fcn",
     "sat": "simulink/Discontinuities/Saturation",
     "mux": "simulink/Signal Routing/Mux",
+    "toworkspace": "simulink/Sinks/To Workspace",
 }
 
 
@@ -117,6 +118,10 @@ def build_wheeled(spec: ModelSpec, command: float, used_radius: float | None) ->
     model.link("integ_v", "sum_v", 1, 2)
     model.link("sum_v", "gain_tau")
     model.link("gain_tau", "integ_v")
+    model.add("toworkspace", "ws_v", 3, 2, VariableName="v_out", SaveFormat="Array")
+    model.add("toworkspace", "ws_x", 3, 4, VariableName="x_out", SaveFormat="Array")
+    model.link("integ_v", "ws_v")
+    model.link("integ_x", "ws_x")
     model.link("integ_v", "integ_x")
     model.link("integ_v", "scope_v")
     model.link("integ_x", "scope_x")
@@ -149,6 +154,9 @@ def build_arm(arm: ArmSpec) -> SlModel:
         model.add("sat", "sat_" + str(index + 1), row, 6,
                   UpperLimit=fmt(high, 6), LowerLimit=fmt(low, 6))
         model.add("scope", "scope_q" + str(index + 1), row, 7)
+        model.add("toworkspace", "ws_q" + str(index + 1), row, 8,
+                  VariableName="q" + str(index + 1), SaveFormat="Array")
+        model.link("sat_" + str(index + 1), "ws_q" + str(index + 1))
         model.link("tau_" + str(index + 1), "sum_" + str(index + 1), 1, 1)
         model.link("integ_w_" + str(index + 1), "gain_b_" + str(index + 1))
         model.link("gain_b_" + str(index + 1), "sum_" + str(index + 1), 1, 2)
@@ -173,6 +181,8 @@ def build_rotor(rotor: RotorSpec) -> SlModel:
     model.add("fcn", "thrust_map", 2, 5,
               Expr=fmt(rotor.kT, 10) + "*u(1)*u(1)")
     model.add("scope", "scope_thrust", 2, 6)
+    model.add("toworkspace", "ws_thrust", 2, 7, VariableName="thrust_out", SaveFormat="Array")
+    model.link("thrust_map", "ws_thrust")
     model.add("scope", "scope_omega", 1, 5)
     if rotor.kQ > 0:
         model.add("fcn", "torque_map", 3, 5,
@@ -235,7 +245,7 @@ def validate(model: SlModel) -> list[str]:
     driven = {line.dst for line in model.lines}
     for block in model.blocks:
         if block.kind in ("sum", "gain", "integ", "scope", "sat", "fcn",
-                          "transfer") and block.name not in driven:
+                          "transfer", "toworkspace") and block.name not in driven:
             problems.append("模块没有输入连线: " + block.name)
     return problems
 
@@ -329,7 +339,8 @@ def emit_mdl(model: SlModel) -> str:
 def _block_type(kind: str) -> str:
     return {"const": "Constant", "step": "Step", "gain": "Gain", "sum": "Sum",
             "integ": "Integrator", "transfer": "TransferFcn", "scope": "Scope",
-            "fcn": "Fcn", "sat": "Saturation", "mux": "Mux"}[kind]
+            "fcn": "Fcn", "sat": "Saturation", "mux": "Mux",
+            "toworkspace": "ToWorkspace"}[kind]
 
 
 def emit_params(spec: ModelSpec, result: Any | None) -> str:

@@ -19,6 +19,8 @@ from __future__ import annotations
 import base64
 import json
 import os
+import shutil
+import subprocess
 import threading
 import uuid
 import webbrowser
@@ -129,6 +131,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/run":
             self._json(self._run(folder, body))
             return
+        if parsed.path == "/api/matlab":
+            self._json(self._run_matlab(folder, body))
+            return
         if parsed.path == "/api/clear":
             for path in folder.iterdir():
                 if path.is_file():
@@ -156,15 +161,76 @@ class Handler(BaseHTTPRequestHandler):
         target.write_bytes(data)
         return {"ok": True, "name": name, "size": len(data)}
 
+    def _run_matlab(self, folder: Path, body: dict) -> dict:
+        """Build (and run) the generated Simulink model with the local MATLAB.
+
+        Only a build_rsw_*.m that this session generated can be executed, so the
+        endpoint cannot be used to run arbitrary code.
+        """
+        script = _safe_name(body.get("script", ""))
+        if not (script.startswith("build_rsw_") and script.endswith(".m")):
+            return {"error": "只允许运行本工具生成的 build_rsw_*.m"}
+        sl_dir = (folder / "out" / "simulink").resolve()
+        target = (sl_dir / script).resolve()
+        if not target.is_file() or not str(target).startswith(str(sl_dir)):
+            return {"error": "模型包还没生成：请勾选「导出 Simulink」后先运行一次诊断"}
+        matlab = shutil.which("matlab")
+        if not matlab:
+            for guess in (r"C:\Program Files\MATLAB\bin\matlab.exe",
+                          r"D:\matlab\bin\matlab.exe",
+                          r"D:\MATLAB\bin\matlab.exe"):
+                if Path(guess).is_file():
+                    matlab = guess
+                    break
+        if not matlab:
+            return {"error": "本机没找到 matlab.exe，请把 MATLAB 的 bin 目录加入 PATH"}
+        func = script[:-2]                       # build_rsw_arm6
+        model_name = func[len("build_"):]        # rsw_arm6
+        code = ("cd('" + str(sl_dir) + "'); " + func + "; "
+                "o = sim('" + model_name + "'); "
+                "disp('SIM_DONE'); "
+                "disp(['t_end=' num2str(o.tout(end))]); "
+                "n = o.who; for k = 1:numel(n); "
+                "if ~strcmp(n{k},'tout'); v = o.(n{k}); "
+                "disp([n{k} '=' num2str(v(end), '%.4f')]); end; end")
+        try:
+            proc = subprocess.run([matlab, "-batch", code], capture_output=True,
+                                  timeout=600)
+        except subprocess.TimeoutExpired:
+            return {"error": "MATLAB 超过 10 分钟没返回，已中止，可能是启动失败或模型报错"}
+        except OSError as exc:
+            return {"error": "无法启动 MATLAB: " + str(exc)}
+        # MATLAB 在中文 Windows 上把输出写在控制台代码页里，先试 UTF-8 再退 GBK
+        raw = (proc.stdout or b"").decode("utf-8", errors="replace")
+        if "\ufffd" in raw:
+            raw = (proc.stdout or b"").decode("gbk", errors="replace")
+        err_raw = (proc.stderr or b"").decode("gbk", errors="replace")
+        output = (raw + err_raw)[-8000:]
+        slx = sorted(p.name for p in sl_dir.glob("*.slx"))
+        signals = {}
+        for line in raw.splitlines():
+            if "=" in line and not line.startswith(("已生成", "模块数", "t_end")):
+                name, _, value = line.partition("=")
+                name = name.strip()
+                try:
+                    signals[name] = float(value.strip())
+                except ValueError:
+                    continue
+        return {"ok": proc.returncode == 0, "exit": proc.returncode,
+                "output": output, "slx": slx, "signals": signals,
+                "simulink_files": sorted(p.relative_to(folder / "out").as_posix()
+                                         for p in sl_dir.rglob("*") if p.is_file())}
+
     def _serve_output(self, path: str, query: dict) -> None:
         parts = [p for p in path.split("/") if p]
         if len(parts) < 3:
             self._json({"error": "bad path"}, 404)
             return
         session = parts[1]
-        name = _safe_name(parts[2])
-        target = (_job_dir(session) / "out" / name).resolve()
-        if not target.exists():
+        rel = "/".join(_safe_name(seg) for seg in parts[2:])
+        out_root = (_job_dir(session) / "out").resolve()
+        target = (out_root / rel).resolve()
+        if not str(target).startswith(str(out_root)) or not target.is_file():
             self._json({"error": "文件不存在"}, 404)
             return
         suffix = target.suffix.lower()
@@ -224,6 +290,7 @@ class Handler(BaseHTTPRequestHandler):
                 payload=float(body.get("payload") or 0.0),
                 used_radius=float(body["used_radius"]) if body.get("used_radius") else None,
                 used_track=float(body["used_track"]) if body.get("used_track") else None,
+                simulink=str(out_dir / "simulink") if body.get("simulink") else None,
                 quiet=True, command=cmd)
         except (FileNotFoundError, ValueError) as exc:
             return {"error": str(exc)}
@@ -231,6 +298,8 @@ class Handler(BaseHTTPRequestHandler):
             return {"error": exc.__class__.__name__ + ": " + str(exc)}
 
         findings = [f.to_dict() for f in result.all_findings()]
+        artifacts = sorted(p.relative_to(out_dir).as_posix()
+                           for p in out_dir.rglob("*") if p.is_file())
         report_path = out_dir / "report.md"
         return {
             "ok": True,
@@ -239,7 +308,8 @@ class Handler(BaseHTTPRequestHandler):
             "findings": findings,
             "notes": result.notes,
             "report": report_path.read_text(encoding="utf-8", errors="replace"),
-            "artifacts": sorted(p.name for p in out_dir.iterdir() if p.is_file()),
+            "artifacts": artifacts,
+            "has_simulink": (out_dir / "simulink").is_dir(),
             "session": folder.name,
         }
 

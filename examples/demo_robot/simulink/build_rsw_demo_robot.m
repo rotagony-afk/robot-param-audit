@@ -17,15 +17,19 @@ function build_rsw_demo_robot()
     add_block('simulink/Math Operations/Gain', [model '/' 'gain_tau'], 'Gain', '33.333333', 'Position', [340 150 420 190]);
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_v'], 'InitialCondition', '0', 'Position', [490 150 570 190]);
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_x'], 'InitialCondition', '0', 'Position', [640 220 720 260]);
-    add_block('simulink/Math Operations/Gain', [model '/' 'gain_odom'], 'Gain', '0.98425197', 'Position', [790 220 870 260]);
+    add_block('simulink/Math Operations/Gain', [model '/' 'gain_odom'], 'Gain', '1', 'Position', [790 220 870 260]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_v'], 'Position', [640 150 720 190]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_x'], 'Position', [940 220 1020 260]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_odom'], 'Position', [940 290 1020 330]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_v'], 'VariableName', 'v_out', 'SaveFormat', 'Array', 'Position', [340 290 420 330]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_x'], 'VariableName', 'x_out', 'SaveFormat', 'Array', 'Position', [640 290 720 330]);
 
     add_line(model, 'v_cmd/1', 'sum_v/1', 'autorouting', 'on');
     add_line(model, 'integ_v/1', 'sum_v/2', 'autorouting', 'on');
     add_line(model, 'sum_v/1', 'gain_tau/1', 'autorouting', 'on');
     add_line(model, 'gain_tau/1', 'integ_v/1', 'autorouting', 'on');
+    add_line(model, 'integ_v/1', 'ws_v/1', 'autorouting', 'on');
+    add_line(model, 'integ_x/1', 'ws_x/1', 'autorouting', 'on');
     add_line(model, 'integ_v/1', 'integ_x/1', 'autorouting', 'on');
     add_line(model, 'integ_v/1', 'scope_v/1', 'autorouting', 'on');
     add_line(model, 'integ_x/1', 'scope_x/1', 'autorouting', 'on');
@@ -35,5 +39,5 @@ function build_rsw_demo_robot()
     target = fullfile(here, [model '.slx']);
     save_system(model, target);
     fprintf('已生成: %s\n', target);
-    fprintf('模块数: %d, 连线数: %d\n', 9, 9);
+    fprintf('模块数: %d, 连线数: %d\n', 11, 11);
 end

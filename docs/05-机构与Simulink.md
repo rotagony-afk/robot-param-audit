@@ -146,6 +146,17 @@ rsw_arm6.slx（48 个模块 / 48 条连线），模型图正确渲染。本项�
 
 自检通过时 README 写「通过（模块名唯一、连线无悬空、端口合法）」。
 
+### 在 App 里直接跑
+
+Web App 里勾选「同时导出 Simulink 模型包」，诊断结果下方会多出一块 Simulink 面板：
+
+- 列出生成的文件，可直接下载；
+- 「用本机 MATLAB 构建并运行」按钮：调用本机 matlab -batch，执行 build_rsw_*.m 并立刻 sim，
+  把记录信号（To Workspace）的末值回显，例如机械臂的 6 个关节角。
+
+前提是这台机器装了 MATLAB（没装会明确提示找不到 matlab.exe）。工具只允许运行自己生成的
+build_rsw_*.m，不接受任意脚本路径。
+
 ### 你的用法
 
 ~~~matlab

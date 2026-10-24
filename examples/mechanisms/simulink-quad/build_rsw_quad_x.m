@@ -19,10 +19,12 @@ function build_rsw_quad_x()
     add_block('simulink/Continuous/Integrator', [model '/' 'integ_omega'], 'InitialCondition', '0', 'Position', [640 150 720 190]);
     add_block('simulink/User-Defined Functions/Fcn', [model '/' 'thrust_map'], 'Expr', '0.000012*u(1)*u(1)', 'Position', [790 220 870 260]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_thrust'], 'Position', [940 220 1020 260]);
+    add_block('simulink/Sinks/To Workspace', [model '/' 'ws_thrust'], 'VariableName', 'thrust_out', 'SaveFormat', 'Array', 'Position', [1090 220 1170 260]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_omega'], 'Position', [790 150 870 190]);
     add_block('simulink/User-Defined Functions/Fcn', [model '/' 'torque_map'], 'Expr', '0.0000002*u(1)*u(1)', 'Position', [790 290 870 330]);
     add_block('simulink/Sinks/Scope', [model '/' 'scope_torque'], 'Position', [940 290 1020 330]);
 
+    add_line(model, 'thrust_map/1', 'ws_thrust/1', 'autorouting', 'on');
     add_line(model, 'integ_omega/1', 'torque_map/1', 'autorouting', 'on');
     add_line(model, 'torque_map/1', 'scope_torque/1', 'autorouting', 'on');
     add_line(model, 'rpm_cmd/1', 'gain_rad/1', 'autorouting', 'on');
@@ -37,5 +39,5 @@ function build_rsw_quad_x()
     target = fullfile(here, [model '.slx']);
     save_system(model, target);
     fprintf('已生成: %s\n', target);
-    fprintf('模块数: %d, 连线数: %d\n', 10, 10);
+    fprintf('模块数: %d, 连线数: %d\n', 11, 11);
 end

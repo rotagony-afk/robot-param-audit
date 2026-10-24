@@ -236,6 +236,7 @@ t,cmd_lin,odom_lin,truth_x,truth_y
 
 - 拖入模型 / 日志 / 网格 / 实测参数，填命令的 vx、vy、ω 与固件轮半径轮距；
 - 右侧直接显示分级结论、证据（文件行号 + 原文）、建议修改；
+- 勾选「同时导出 Simulink 模型包」后，还会生成 build_rsw_*.m / .mdl / params.m，并可以点「用本机 MATLAB 构建并运行」，直接跑一次 sim 拿到记录信号的末值；
 - 可下载 report.md / findings.json / trace；
 - 只绑 127.0.0.1、校验一次性 token、上传限定扩展名与 8 MB、不联网、不执行上传内容。
 

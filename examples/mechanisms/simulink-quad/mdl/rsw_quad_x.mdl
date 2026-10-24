@@ -51,6 +51,13 @@ Model {
       Position [940, 220, 1020, 260]
     }
     Block {
+      BlockType ToWorkspace
+      Name      'ws_thrust'
+      VariableName 'thrust_out'
+      SaveFormat 'Array'
+      Position [1090, 220, 1170, 260]
+    }
+    Block {
       BlockType Scope
       Name      'scope_omega'
       Position [790, 150, 870, 190]
@@ -65,6 +72,12 @@ Model {
       BlockType Scope
       Name      'scope_torque'
       Position [940, 290, 1020, 330]
+    }
+    Line {
+      SrcBlock 'thrust_map'
+      SrcPort  1
+      DstBlock 'ws_thrust'
+      DstPort  1
     }
     Line {
       SrcBlock 'integ_omega'

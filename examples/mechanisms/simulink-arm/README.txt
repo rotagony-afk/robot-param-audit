@@ -15,7 +15,7 @@ rsw-audit 生成的 Simulink 模型包
   - 每个关节一个二阶伺服模型：tau -> 1/(J s + b) -> omega -> q
   - J 与 b 用 params.m 里的标称值，请用 CAD 得到的真实连杆惯量替换
 
-模块数 48，连线数 48。
+模块数 54，连线数 54。
 
 说明：文本模型放在 mdl/ 子目录，避免同名 .mdl 与模型名在 MATLAB 路径上相互遮蔽（会报 shadowing 警告）。
 
