@@ -169,6 +169,6 @@ wrong token rejected: 403
 
 ## 9. 测试
 
-`python -m pytest` → **72 passed**（原有 56 + 通用层 16）。
+`python -m pytest` → **91 passed**（最终：原有 56 + 通用层 16 + 机构与 Simulink 19）。
 新增用例覆盖：网格体积/惯量与解析解一致、四种模型格式导入、五种底盘的可行性与轮速、
 阿克曼内外轮角、仿真复现里程计比例误差、两条参数反推路径、App 的文件名与 token 校验。

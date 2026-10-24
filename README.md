@@ -113,7 +113,7 @@ robot-param-audit/
 │   ├── SKILL.md
 │   ├── scripts/
 │   │   ├── audit.py
-│   │   └── rswaudit/             18 个模块：扫描 / 规则 / 运动学 / 仿真 / 网格 / App
+│   │   └── rswaudit/             21 个模块：扫描 / 规则 / 运动学 / 仿真 / 网格 / 机构 / Simulink / App
 │   │       └── webui.html        App 前端（单文件，无外部资源）
 │   ├── references/rules.md       规则语义、阈值与公式速查
 │   └── assets/sample-report.md   真实生成的示例报告
