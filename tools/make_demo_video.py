@@ -392,7 +392,43 @@ def main() -> int:
         emit(frames, terminal_frame("PowerShell  —  构建脚本（公开 API，非手写 .slx）", head_shown),
              FPS * 3, tmp)
 
-    # ---- scene 13: summary ----------------------------------------------- #
+    # ---- scene 13: matlab build + sim ------------------------------------------ #
+    matlab = shutil.which("matlab")
+    if not matlab:
+        for guess in (r"D:\matlab\bin\matlab.exe", r"C:\Program Files\MATLAB\bin\matlab.exe"):
+            if Path(guess).is_file():
+                matlab = guess
+                break
+    sl_dir = ROOT / "docs/_out-sl"
+    mlines: list[str] = []
+    if matlab and sl_dir.is_dir():
+        code = ("cd('" + str(sl_dir) + "'); build_rsw_arm6; "
+                "o = sim('rsw_arm6'); disp('SIM_DONE'); "
+                "disp(['t_end=' num2str(o.tout(end))]); "
+                "n = o.who; for k = 1:numel(n); "
+                "if ~strcmp(n{k},'tout'); v = o.(n{k}); "
+                "disp([n{k} '=' num2str(v(end), '%.4f')]); end; end")
+        try:
+            proc = subprocess.run([matlab, "-batch", code], capture_output=True, timeout=900)
+            mlines = proc.stdout.decode("gbk", errors="replace").splitlines()
+            mlines += [l for l in proc.stderr.decode("gbk", errors="replace").splitlines() if l.strip()]
+        except Exception as exc:
+            mlines = ["MATLAB 调用失败: " + str(exc)]
+    else:
+        mlines = ["本机没有 MATLAB，跳过这一场景（视频不伪造仿真结果）"]
+
+    shown = ["$ matlab -batch \"build_rsw_arm6; o = sim('rsw_arm6'); ...\"", ""]
+    emit(frames, terminal_frame("MATLAB  —  用生成的模型真正跑一次仿真", shown), FPS // 2, tmp)
+    for line in [item for item in mlines if item.strip()]:
+        for part in wrap(line):
+            shown.append(part)
+            emit(frames, terminal_frame("MATLAB  —  用生成的模型真正跑一次仿真", shown),
+                 FPS // 3, tmp)
+    emit(frames, terminal_frame("MATLAB  —  用生成的模型真正跑一次仿真", shown,
+                                "同一套模型：诊断给参数，MATLAB 给波形；末值来自 To Workspace 记录"),
+         FPS * 2, tmp)
+
+    # ---- scene 14: summary ----------------------------------------------- #
     summary = slide_frame(
         "交付物",
         "全部由真实运行产生，可逐条复现",
@@ -404,7 +440,7 @@ def main() -> int:
          ("五种轮系：差速 / 阿克曼 / 麦轮 / 全向 / 滑移", FG),
          ("支持 URDF / MJCF / SDF / JSON + STL/OBJ 网格", FG),
          ("三类机构：机械臂 / 螺旋桨 / 激光雷达", FG),
-         ("--simulink 导出 MATLAB 可直接生成的 .slx", ACCENT),
+         ("--simulink 导出 .slx 构建包，可一键跑 sim 出末值", ACCENT),
          ("91 个自动化测试通过 · 运行期零第三方依赖", GREEN),
          ("还有本地 Web App：run-app.cmd 一键启动", ACCENT),
          ("无真值时不下绝对结论 —— 这是设计，不是缺陷", YELLOW)])

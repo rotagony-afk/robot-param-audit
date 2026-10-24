@@ -32,7 +32,7 @@ SKIP_DIRS = {
     ".pytest-tmp", "_pages", "_frames", "_out-static", "_out-full",
     "audit-out", "build", "dist", ".venv", "node_modules",
 }
-SKIP_PREFIX = ("pytest-cache-files-",)
+SKIP_PREFIX = ("pytest-cache-files-", "_out-", "_frames")
 SKIP_SUFFIX = (".pyc", ".pyo", ".bak", ".egg-info")
 SKIP_NAMES = {".DS_Store", "Thumbs.db"}
 
