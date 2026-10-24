@@ -111,6 +111,10 @@
       <div><label>固件轮半径 m</label><input type="number" id="usedRadius" placeholder="默认取模型值" step="0.0001"></div>
       <div><label>固件轮距 m</label><input type="number" id="usedTrack" placeholder="默认取模型值" step="0.001"></div>
     </div>
+    <div class="row">
+      <div><label>末端负载 kg（机械臂）</label><input type="number" id="payload" value="0" step="0.5"></div>
+      <div><label>目标点 x,y,z（机械臂）</label><input type="text" id="target" placeholder="0.45,0,0.30"></div>
+    </div>
 
     <button id="run">运行诊断</button>
     <button class="ghost" id="clear">清空本会话文件</button>
@@ -260,7 +264,8 @@ q("run").addEventListener("click", function () {
     reality: picked.reality,
     speed: num("speed") || 0.3, yaw_rate: num("yawRate") || 0,
     lateral: num("lateral") || 0, density: num("density"),
-    used_radius: num("usedRadius"), used_track: num("usedTrack")
+    used_radius: num("usedRadius"), used_track: num("usedTrack"),
+    payload: num("payload") || 0, target: q("target").value.trim()
   };
   fetch(api("/api/run"), {
     method: "POST",

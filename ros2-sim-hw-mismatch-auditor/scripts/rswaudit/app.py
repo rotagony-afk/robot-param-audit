@@ -193,6 +193,16 @@ class Handler(BaseHTTPRequestHandler):
                                json.loads(reality_path.read_text(encoding="utf-8")).items()}
                 except (ValueError, TypeError, OSError):
                     reality = {}
+        target = None
+        raw_target = str(body.get("target") or "").replace(";", ",").strip()
+        if raw_target:
+            parts = [p.strip() for p in raw_target.split(",") if p.strip()]
+            if len(parts) != 3:
+                return {"error": "目标点格式应为 x,y,z（例如 0.45,0,0.30）"}
+            try:
+                target = tuple(float(p) for p in parts)
+            except ValueError:
+                return {"error": "目标点三个分量都必须是数字，例如 0.45,0,0.30"}
         mesh = _safe_name(body["mesh"]) if body.get("mesh") else None
         if mesh and not (folder / mesh).exists():
             return {"error": "网格文件不存在"}
@@ -210,6 +220,8 @@ class Handler(BaseHTTPRequestHandler):
                 speed=float(body.get("speed", 0.3)),
                 yaw_rate=float(body.get("yaw_rate", 0.0)),
                 lateral=float(body.get("lateral", 0.0)),
+                target=target,
+                payload=float(body.get("payload") or 0.0),
                 used_radius=float(body["used_radius"]) if body.get("used_radius") else None,
                 used_track=float(body["used_track"]) if body.get("used_track") else None,
                 quiet=True, command=cmd)
