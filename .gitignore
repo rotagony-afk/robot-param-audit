@@ -1,0 +1,14 @@
+tests-work/
+pytest-tmp/
+.pytest-tmp/
+pytest-cache-files-*/
+audit-out/
+*.bak
+__pycache__/
+*.pyc
+.pytest_cache/
+build/
+dist/
+*.egg-info/
+docs/project-introduction.pdf
+docs/demo-video.mp4

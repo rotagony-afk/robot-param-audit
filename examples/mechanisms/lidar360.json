@@ -1,0 +1,19 @@
+{
+  "name": "mid360_like",
+  "lidar": {
+    "name": "mid360_like",
+    "fov_h_deg": 360.0,
+    "fov_v_deg": 30.0,
+    "az_res_deg": 0.2,
+    "vert_lines": 16,
+    "rate_hz": 10.0,
+    "declared_points_per_s": 100000,
+    "range_min_m": 0.3,
+    "range_max_m": 40.0,
+    "accuracy_m": 0.02,
+    "range_resolution_m": 0.01,
+    "divergence_mrad": 2.5,
+    "mount_height_m": 0.4,
+    "mount_pitch_deg": 0.0
+  }
+}

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rsw-audit"
+version = "1.0.0"
+description = "ROS 2 simulation-vs-hardware parameter mismatch auditor (static diff + run-log diagnosis)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "rsw-audit contributors" }]
+keywords = ["ros2", "robotics", "simulation", "debugging", "urdf", "agent-skill"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
+]
+# The runtime deliberately depends on the Python standard library only.
+dependencies = []
+
+[project.scripts]
+rsw-audit = "rswaudit.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "ros2-sim-hw-mismatch-auditor/scripts" }
+packages = ["rswaudit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -p no:cacheprovider -p no:tmpdir"
+filterwarnings = ["ignore::DeprecationWarning"]

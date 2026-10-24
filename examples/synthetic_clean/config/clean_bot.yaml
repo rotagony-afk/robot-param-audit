@@ -1,0 +1,11 @@
+# Every value here agrees with the URDF: the auditor must stay quiet.
+clean_bot:
+  ros__parameters:
+    wheel_radius: 0.05
+    wheel_separation: 0.30
+    ticks_per_rev: 1024
+    gear_ratio: 20.0
+    control_rate: 20.0
+    max_linear_vel: 0.2
+    max_angular_vel: 1.0
+    max_wheel_vel: 4.0

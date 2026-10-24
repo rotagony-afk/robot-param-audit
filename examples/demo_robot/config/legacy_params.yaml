@@ -1,0 +1,6 @@
+# Leftover ROS 1 config, kept around for reference.
+# The value is still in millimetres, which is exactly the sort of copy-paste
+# that makes a robot drive 1000x slower than it should.
+legacy_robot:
+  ros__parameters:
+    max_linear_vel: 500

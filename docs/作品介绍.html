@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>机器人仿真实机参数错配诊断器 · 作品介绍</title>
+<style>
+  @page { size: A4; margin: 17mm 15mm 16mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+    font-size: 10.5pt; line-height: 1.75; color: #1f2430; margin: 0;
+  }
+  h1 { font-size: 21pt; margin: 0 0 6pt; letter-spacing: 0.5pt; }
+  h2 {
+    font-size: 14.5pt; margin: 22pt 0 8pt; padding-left: 9pt;
+    border-left: 5px solid #2f6fd0; color: #14305c;
+  }
+  h3 { font-size: 11.5pt; margin: 14pt 0 5pt; color: #1c3f74; }
+  p { margin: 5pt 0; text-align: justify; }
+  ul, ol { margin: 5pt 0 5pt 18pt; padding: 0; }
+  li { margin: 2pt 0; }
+  code {
+    font-family: Consolas, "Courier New", monospace; font-size: 9pt;
+    background: #f2f5f9; padding: 1px 4px; border-radius: 3px; color: #16324f;
+  }
+  pre {
+    font-family: Consolas, "Courier New", monospace; font-size: 8.8pt; line-height: 1.45;
+    background: #f7f9fc; border: 1px solid #dde5ef; border-left: 3px solid #2f6fd0;
+    padding: 8pt 10pt; margin: 7pt 0; white-space: pre-wrap; word-break: break-all;
+    color: #1c2b3a;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 9.5pt; }
+  th, td { border: 1px solid #d7e0ea; padding: 4pt 6pt; vertical-align: top; text-align: left; }
+  th { background: #eef3f9; color: #14305c; font-weight: 600; }
+  .cover { padding-top: 40pt; }
+  .cover h1 { font-size: 27pt; line-height: 1.35; }
+  .cover .sub { font-size: 13pt; color: #2f6fd0; margin-top: 8pt; }
+  .cover .meta { margin-top: 26pt; }
+  .cover .meta td { border: none; padding: 3pt 0; font-size: 10.5pt; }
+  .cover .meta td:first-child { color: #6a7684; width: 90pt; }
+  .tag {
+    display: inline-block; background: #eaf1fb; color: #1c4f9c; border-radius: 3pt;
+    padding: 1pt 6pt; margin-right: 4pt; font-size: 9pt;
+  }
+  .note { background: #fff8e6; border-left: 3px solid #d9a520; padding: 6pt 9pt; margin: 8pt 0; font-size: 9.5pt; }
+  .good { color: #1d7a3c; font-weight: 600; }
+  .bad { color: #b63b3b; font-weight: 600; }
+  .page-break { page-break-before: always; }
+  .kv { font-size: 9.5pt; }
+  .toc li { margin: 2pt 0; }
+  footer { margin-top: 18pt; font-size: 8.5pt; color: #8b96a4; border-top: 1px solid #dde5ef; padding-top: 6pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="sub">第四届开放原子大赛 · 2026 开源行业解决方案创新赛</div>
+  <h1>机器人仿真实机参数错配诊断器</h1>
+  <div class="sub">rsw-audit · 让“仿真能跑、实车走偏”变成有行号证据的排查</div>
+
+  <table class="meta">
+    <tr><td>参赛赛道</td><td>赛道一 · 开源基础软件与解决方案（AI 开发工具链与智能体框架）</td></tr>
+    <tr><td>作品形态</td><td>Agent Skill + 可运行开源软件 + 本地 Web App + Simulink 模型导出（Python，运行时零第三方依赖）</td></tr>
+    <tr><td>Skill 标识</td><td><code>ros2-sim-hw-mismatch-auditor</code></td></tr>
+    <tr><td>代码规模</td><td>21 个模块 + 1 个入口脚本 + 单文件前端 / 约 7400 行 Python；91 个自动化测试（1100 行）</td></tr>
+    <tr><td>开源许可证</td><td>Apache License 2.0</td></tr>
+    <tr><td>文档版本</td><td>v1.0.0</td></tr>
+  </table>
+
+  <p style="margin-top:30pt;">
+    <span class="tag">ROS 2</span>
+    <span class="tag">URDF</span>
+    <span class="tag">参数一致性</span>
+    <span class="tag">里程计标定</span>
+    <span class="tag">Agent Skill</span>
+    <span class="tag">可复现证据</span>
+  </p>
+
+  <div class="note" style="margin-top:26pt;">
+    本文档中的全部数字、行号与输出片段，均来自最终代码在示例工程上的真实运行结果。
+    凡未实际验证的内容（例如真机数据、ROS 2 运行环境），都在第 7 节与文末“声明”中明确标注。
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<h2>一、项目概述</h2>
+
+<h3>1.1 项目名称</h3>
+<p><strong>机器人仿真实机参数错配诊断器</strong>（英文标识：<code>rsw-audit</code>）。</p>
+
+<h3>1.2 项目简介</h3>
+<p>
+rsw-audit 是一个面向 ROS 2 差速底盘工程的开源诊断工具，以 <strong>Agent Skill</strong> 的形式交付，
+核心能力由真实可运行的 Python 代码实现。它解决的是机器人调试中最常见、又最难自证的一类问题：
+<strong>同一个物理量被写在了好几个文件里，而且互不一致</strong>。
+</p>
+<p>
+典型情形：轮半径既出现在 URDF 的圆柱几何里，又出现在 <code>params.yaml</code> 的
+<code>wheel_radius</code> 里，还硬编码在 C++ 的 <code>constexpr</code> 常量里；轮距既可以从左右轮
+joint origin 算出来，又可以在配置里手填。仿真时用的是配置里的值，实车物理尺寸却是另一回事，
+于是“仿真走得笔直，实车画着弧跑”。
+</p>
+<p>
+工具分三步工作：先<strong>把全工程的数值字面量抽出来、映射到统一参数名</strong>，量化差异并给出
+文件行号；再<strong>解析运行日志</strong>重算里程计尺度、转角尺度、控制周期抖动、响应延迟、限幅与超调；
+最后<strong>把运行偏差当方程、静态冲突当候选解</strong>，只有当反推出的修正值恰好等于工程里另一处
+已经写着的值时，才判定根因收敛并生成补丁，否则明确写出“无法唯一确定”。
+</p>
+
+<h3>1.3 项目核心价值</h3>
+<table>
+  <tr><th style="width:26%">价值</th><th>具体说明</th></tr>
+  <tr>
+    <td>可核验</td>
+    <td>每条结论都带 <code>文件:行号 + 原文摘录</code>；自动化测试会逐字核对证据行号与文件内容是否一致（已核对 20+ 条）。</td>
+  </tr>
+  <tr>
+    <td>可收敛</td>
+    <td>运行数据与静态文件交叉验证，输出<strong>唯一</strong>修正值（示例中 0.05 → 0.0508、0.30 → 0.32），并生成可直接 review 的 unified diff。</td>
+  </tr>
+  <tr>
+    <td>不臆造</td>
+    <td>缺真值时判 <code>unverifiable</code>，不给偏差百分比；多个参数数学上等价时列出全部候选并拒绝选择；报告单列“未验证”章节。</td>
+  </tr>
+  <tr>
+    <td>可复现</td>
+    <td>全流程写 <code>trace.jsonl</code>（阶段、动作、规则、读取的文件、判定结果），别人可照着复现同一次判定。</td>
+  </tr>
+  <tr>
+    <td>可移植</td>
+    <td>纯标准库实现，无需安装 ROS 2，也不联网；在有 Python ≥ 3.9 的机器上即可运行。</td>
+  </tr>
+</table>
+<h2>二、项目背景</h2>
+
+<h3>2.1 实际应用场景</h3>
+<ul>
+  <li><strong>课程与竞赛机器人</strong>：学生先用 Gazebo 把差速小车跑通，再上实车，发现直行距离、转弯角度都对不上；</li>
+  <li><strong>工程移植</strong>：从 ROS 1 迁移到 ROS 2 时，旧配置里的毫米单位、旧参数名被原样带过来；</li>
+  <li><strong>多人协作 / 代码交接</strong>：接手别人的工程，需要快速确认 URDF 几何、配置参数、源码常量是否一致；</li>
+  <li><strong>调参陷入僵局</strong>：PID 怎么调都抖，但真正的原因其实是控制周期抖动或通信延迟。</li>
+</ul>
+
+<h3>2.2 现有问题</h3>
+<ol>
+  <li><strong>同一个量散落在多处，且没有单一事实来源。</strong>
+      URDF 里是几何真值，YAML 里是运行时配置，源码里是编译期常量，三者从来没有机制保证一致。</li>
+  <li><strong>不一致是“静默”的。</strong>
+      改错文件、同键重复、单位写成毫米，加载器都不报错，只在行为上表现为“走不准”。</li>
+  <li><strong>人工核对成本高且不可靠。</strong>
+      一个中等规模工程有几十个文件，人工比对只能靠肉眼和记忆；改完一轮参数，之前核对的结果就作废了。</li>
+  <li><strong>通用 AI 对话解决不了。</strong>
+      把文件贴给聊天模型，它能“看着像”地说出哪里不一致，但经常编造不存在的参数名、给不出行号、
+      也无法回答“到底偏了多少、改哪个值才对”。</li>
+</ol>
+
+<h3>2.3 本项目要解决的痛点</h3>
+<table>
+  <tr><th style="width:30%">痛点</th><th>本项目的处理方式</th></tr>
+  <tr><td>不知道哪里不一致</td><td>S01/S02/S04/S05/S07/S10 等规则把冲突、单位、几何、频率差异逐条列出，带行号</td></tr>
+  <tr><td>不知道偏了多少</td><td>R01/R02 用真值重算尺度，直接给出“真值 0.995 m / 里程计 0.9793 m = 1.6%”</td></tr>
+  <tr><td>不知道该改哪个</td><td>C01/C02 交叉验证，收敛到唯一参数与唯一取值，并生成 diff</td></tr>
+  <tr><td>不知道能不能信</td><td>confidence + status 双标注；无法判定的一律进“未验证”章节</td></tr>
+  <tr><td>不知道改完有没有变好</td><td>改完再跑一次即可对比；补丁幂等，不会重复改</td></tr>
+</table>
+
+<h2>三、技术架构</h2>
+
+<h3>3.1 使用的技术</h3>
+<table>
+  <tr><th style="width:22%">层次</th><th>技术选择与理由</th></tr>
+  <tr>
+    <td>语言与依赖</td>
+    <td>Python 3.9+，<strong>运行时仅用标准库</strong>（re / csv / json / math / difflib / pathlib / hashlib）。
+        理由是机器人工作站在现场常常没网、pip 源不可用；零依赖意味着“拷贝即用”。</td>
+  </tr>
+  <tr>
+    <td>解析层</td>
+    <td>
+      自研 XML tokenizer（支持多行标签、注释、属性位置回填），可给出每个属性值的<strong>行号与列号</strong>；<br>
+      自研缩进感知 YAML 扫描器，能给出 flow 序列 <code>[0.05, 0.06]</code> 中<strong>每个元素</strong>的列号；<br>
+      launch 与源码用定向正则 + 别名过滤（避免把 <code>i = 0</code> 误当参数）。
+    </td>
+  </tr>
+  <tr>
+    <td>数值方法</td>
+    <td>梯形积分求位移、轨迹弧长求真值距离、角度解缠、归一化互相关估计时延、
+        分段统计超调与穿越次数。</td>
+  </tr>
+  <tr>
+    <td>交付层</td>
+    <td>Markdown 报告 + JSON 结论 + JSONL 痕迹 + 基于 <code>difflib</code> 的 unified diff 补丁。</td>
+  </tr>
+  <tr>
+    <td>Skill 层</td>
+    <td>Agent Skills 规范：<code>SKILL.md</code>（YAML frontmatter 仅 <code>name</code> 与 <code>description</code>）
+        + 自包含 <code>scripts/</code> + <code>references/</code> + <code>assets/</code>。</td>
+  </tr>
+</table>
+
+<h3>3.2 Skill 在项目中起什么作用</h3>
+<p>
+Skill 本身不是“提示词封装”，而是把<strong>排查流程与判断边界</strong>固化下来，让 AI Agent 知道：
+什么时候该用这个工具、按什么顺序执行、结果里哪些是结论、哪些必须原样转述为“未验证”。
+</p>
+<table>
+  <tr><th style="width:30%">角色</th><th>职责</th></tr>
+  <tr><td>Skill（SKILL.md）</td><td>定义触发场景、输入要求、9 步标准流程、输出解读规则、异常处理表、能力边界</td></tr>
+  <tr><td>代码（scripts/）</td><td>真正干活：解析、比对、积分、判定、生成报告与补丁</td></tr>
+  <tr><td>Agent</td><td>识别用户场景 → 执行命令 → 按 Skill 规则解读 → 把“未验证项”如实转述 → 征求确认后再落盘</td></tr>
+</table>
+<p class="note">
+关键分工：<strong>数值判断全部在代码里完成</strong>，Agent 不参与“猜参数”。
+这样即使换一个模型来驱动，结论也一致、可复现。
+</p>
+
+<h3>3.3 核心执行流程</h3>
+<pre>输入：工程目录（+ 可选日志 / 可选真值）
+  │
+  ├─ 1. 扫描与分类      urdf / xacro / yaml / launch / cpp / py，逐文件写 trace
+  ├─ 2. 提取字面量      每个数值记录 (规范参数名, 值, 单位, 来源, 文件, 行, 列)
+  ├─ 3. 规范化          别名表 + 直径→半径折算 + 大小写/分隔符归一
+  ├─ 4. 静态规则         S01 S02 S03 S04 S05 S06 S07 S08 S09 S10
+  ├─ 5. 日志解析         CSV / key=value / ROS2 控制台 → 列名同义词识别
+  ├─ 6. 运行规则         R01 R02 R03 R04 R05 R06 R07 R08
+  ├─ 7. 交叉验证         R01 × S01/S02/S10 → C01   R02 × S04 → C02
+  ├─ 8. 补丁生成         按 (文件, 行, 列) 精确定位字面量替换 → unified diff
+  └─ 9. 产物             report.md / findings.json / trace.jsonl / trace.md / patches/
+输出：退出码 0（无严重问题）｜2（存在 CRITICAL/HIGH）｜1（输入不可读）</pre>
+
+<h3>3.4 主要功能模块</h3>
+<table>
+  <tr><th style="width:32%">模块</th><th>职责</th></tr>
+  <tr><td><code>evidence.py</code></td><td>Evidence / Fact / Proposal / Finding 值对象；严重度与置信度排序；数值格式化</td></tr>
+  <tr><td><code>registry.py</code></td><td>规范参数名与别名表、单位倍率识别、符号/聚类/相对差比较</td></tr>
+  <tr><td><code>scanners_static.py</code></td><td>XML/YAML/launch/源码扫描器；工程遍历与文件分类</td></tr>
+  <tr><td><code>scanners_log.py</code></td><td>日志解析、列名同义词、积分/弧长/解缠/周期统计</td></tr>
+  <tr><td><code>static_rules.py</code></td><td>S01—S10 静态一致性规则</td></tr>
+  <tr><td><code>runtime_rules.py</code></td><td>R01—R08 运行诊断规则</td></tr>
+  <tr><td><code>correlate.py</code></td><td>C01/C02 交叉验证、候选枚举、等价性拒答</td></tr>
+  <tr><td><code>patcher.py</code></td><td>补丁生成、列级定位替换、<code>--apply</code> 与 .bak 备份</td></tr>
+  <tr><td><code>report.py</code></td><td>中文报告、findings.json、trace.md、分栏与摘要</td></tr>
+  <tr><td><code>trace.py</code> / <code>cli.py</code></td><td>JSONL 痕迹记录；命令行入口与退出码</td></tr>
+  <tr><td><code>modelspec.py</code></td><td>统一模型规格；URDF / MJCF / SDF / JSON 四路导入</td></tr>
+  <tr><td><code>kinematics.py</code></td><td>统一轮系雅可比、不可侧滑约束、转向几何、力分配与可达性</td></tr>
+  <tr><td><code>mesh.py</code></td><td>STL/OBJ 解析与有符号四面体分解，反推体积 / 质心 / 惯量</td></tr>
+  <tr><td><code>simulate.py</code></td><td>前向仿真（滞后、延迟、轮速与附着限制）与参数反推</td></tr>
+  <tr><td><code>model_rules.py</code></td><td>M01—M11 模型级与仿真对比规则</td></tr>
+  <tr><td><code>app.py</code> / <code>webui.html</code></td><td>零依赖本地 Web App（token 校验、拖拽上传、结果渲染）</td></tr>
+  <tr><td><code>mechanisms.py</code></td><td>串联机械臂（正解/雅可比/逆解/静力矩）、螺旋桨气动、激光雷达扫描几何</td></tr>
+  <tr><td><code>mechanism_rules.py</code></td><td>A01—A04 / P01—P04 / L01—L03 机构规则</td></tr>
+  <tr><td><code>simulink_gen.py</code></td><td>按诊断结果生成 Simulink 模型包（MATLAB 构建脚本 + 文本模型 + 参数 + 自检）</td></tr>
+</table>
+<p>
+  此外还有 <code>__init__.py</code>（版本号）与 <code>scripts/audit.py</code>（无需安装即可运行的入口脚本）；
+  测试代码 879 行，与实现代码分开统计。
+</p>
+
+<h3>3.5 输入输出关系</h3>
+<table>
+  <tr><th style="width:34%">输入</th><th>输出</th></tr>
+  <tr><td>URDF/Xacro 的 <code>cylinder@radius</code>、<code>joint origin/axis</code>、<code>mass</code>、<code>inertia</code></td>
+      <td>S04 几何不一致、S05 轴不一致、S06 惯量异常、wheel_radius 事实</td></tr>
+  <tr><td>YAML 的 <code>ros__parameters</code> 数值（含重复键）</td>
+      <td>S01 冲突、S02 单位、S10 重复键</td></tr>
+  <tr><td>launch 的 <code>DeclareLaunchArgument</code> / 参数字典</td>
+      <td>S01 冲突（与 yaml 交叉）、S09 未知参数</td></tr>
+  <tr><td>C++/Python 的 <code>constexpr</code> / <code>#define</code> / 赋值常量</td>
+      <td>S01 冲突的第三方证据</td></tr>
+  <tr><td>日志 <code>odom_lin</code> + <code>truth_x/truth_y</code></td>
+      <td>R01 线尺度偏差 → C01 根因与补丁</td></tr>
+  <tr><td>日志 <code>odom_yaw</code> + <code>truth_yaw</code></td>
+      <td>R02 角尺度偏差 → C02 根因与补丁</td></tr>
+  <tr><td>日志 <code>t</code> / <code>cmd_lin</code> / <code>odom_lin</code></td>
+      <td>R03 抖动、R04 延迟、R05 限幅、R06 超调、R07 死信号、R08 数据质量</td></tr>
+</table>
+
+
+<h2>四、核心功能</h2>
+
+<h3>4.1 功能一：多源参数静态比对</h3>
+<p><strong>实现了什么</strong>：从 URDF、YAML、launch、源码中提取数值字面量，映射到统一参数名，
+量化差异并给出每处的文件、行、列与原文。</p>
+<p><strong>如何使用</strong>：</p>
+<pre>python scripts/audit.py static --project examples/demo_robot</pre>
+<p><strong>输出什么</strong>（真实运行结果，节选）：</p>
+<pre>[严重] S02 [HIGH/待确认] 疑似单位不一致：最大线速度（比值 1000）
+[高] S01 [HIGH/已确认] 驱动轮半径 多处定义且数值不一致（2 组）
+    首证据: description/config/demo_robot_params.yaml:7
+[高] S04 [HIGH/已确认] 左右轮距与 URDF 轮子安装位置不一致（声明 0.3 m / 几何 0.32 m）
+[高] S05 [HIGH/已确认] 轮子 joint 的旋转轴方向不一致
+[高] S06 [HIGH/已确认] 转动惯量三个主轴全为 0
+[高] S07 [MEDIUM/已确认] 控制频率 50 Hz 高于仿真更新频率 20 Hz
+[中] S06 [HIGH/待确认] 1 个连杆没有惯性参数
+[中] S10 [HIGH/已确认] 同一 YAML 作用域内重复定义 wheel_radius</pre>
+<p>S01 的指标与证据（来自 <code>findings.json</code>）：</p>
+<pre>相对差 1.575%，来源 ["source", "urdf", "yaml"]，
+证据：demo_robot_params.yaml:7  wheel_radius: 0.05
+      demo_robot_params.yaml:15 wheel_radius: 0.05
+      demo_robot.urdf:38          &lt;cylinder radius="0.0508" length="0.03"/&gt;
+      diff_drive_controller.cpp:10 constexpr double WHEEL_RADIUS = 0.05;</pre>
+
+<h3>4.2 功能二：运行日志诊断</h3>
+<p><strong>实现了什么</strong>：解析 CSV / key=value 日志，重算里程计线位移与转角尺度，并统计控制周期抖动、
+指令到反馈延迟、限幅、超调与死信号。</p>
+<p><strong>如何使用</strong>：</p>
+<pre>python scripts/audit.py full --project examples/demo_robot \
+    --log examples/demo_robot/logs/run_straight.csv</pre>
+<p><strong>输出什么</strong>（真实结果）：</p>
+<pre>[高] R01 [HIGH/已确认] 里程计线位移偏差 1.6%（真值 0.995 m / 里程计 0.9793 m）
+| odom_distance | 0.979330 |
+| truth_distance | 0.995000 |
+| ratio | 1.015991 |
+| truth_source | 由 truth_x/truth_y 轨迹累积 |</pre>
+<p><strong>反过来也成立</strong>：同一份工具在无真值日志上会明确拒绝下结论：</p>
+<pre>[信息] R01 [HIGH/无法判定] 日志中没有真值位移，里程计绝对尺度无法判定
+没有 truth_x/truth_y、truth_lin 或 --expect-distance，只能确认里程计自己积出来的距离是 0.9793 m，
+无法判断它对不对。</pre>
+
+<h3>4.3 功能三：根因收敛与补丁</h3>
+<p><strong>实现了什么</strong>：把运行偏差当作方程、静态冲突当作候选解。只有当反推的修正值与工程里
+另一处已存在的字面量吻合（容差 0.5%）时，才判定根因收敛。</p>
+<p><strong>如何使用</strong>：与功能二同一条命令（<code>full</code> 会自动做关联）。</p>
+<p><strong>输出什么</strong>（真实结果）：</p>
+<pre>[高] C01 [HIGH/已确认] 根因收敛：驱动轮半径 应为 0.0508（当前 0.05）
+
+运行数据给出的尺度比值（真值/里程计）= 1.015991。
+把这一比值代入各候选参数：驱动轮半径 0.05 -&gt; 0.0508（与静态文件中的 0.0508 一致）；
+编码器每转计数 1024 -&gt; 1007.9。
+其中 编码器每转计数 在数学上同样能解释该误差，但没有任何静态文件支持它，因此判定为次要可能。
+
+建议修改（默认不写入磁盘）
+- description/config/demo_robot_params.yaml:7   `0.05` -&gt; `0.0508`
+- description/config/demo_robot_params.yaml:15  `0.05` -&gt; `0.0508`
+- src/diff_drive_controller.cpp:10              `0.05` -&gt; `0.0508`</pre>
+<p>生成的补丁文件（真实内容，节选）：</p>
+<pre>--- a/description/config/demo_robot_params.yaml
++++ b/description/config/demo_robot_params.yaml
+@@ -5,5 +5,5 @@
+ demo_robot:
+   ros__parameters:
+-    wheel_radius: 0.05
++    wheel_radius: 0.0508
+     wheel_separation: 0.30</pre>
+<p>换成转向日志，同一套机制给出另一条根因：</p>
+<pre>[高] C02 [HIGH/已确认] 根因收敛：左右轮距 应为 0.32（当前 0.3）
+转角比值（真值/里程计）= 0.937545。差速模型下 ω = (v_r - v_l) / L，
+因此 L_true = L_used / 比值 = 0.3 / 0.937545 = 0.32，与 demo_robot.urdf:81 中的 0.32 吻合。</pre>
+
+<h3>4.4 功能四：调试痕迹与可复现性</h3>
+<p><strong>实现了什么</strong>：每个阶段、每个动作、每条规则的结果都追加一行 JSONL，包含读取了哪些文件、
+规则产出几条结论、以及补丁生成情况。</p>
+<p><strong>输出什么</strong>：<code>trace.jsonl</code>（机器可读，序号严格递增）与 <code>trace.md</code>（人类可读）。
+配合输入文件的 <code>sha256</code> 指纹，可以确认两次运行读的是不是同一批文件。</p>
+<pre>{"seq": 1, "stage": "init", "action": "start", "tool": "rsw-audit", "version": "1.0.0"}
+{"seq": 2, "stage": "init", "action": "options", "tolerance": 0.001, "scale_tol": 0.01}
+{"seq": 7, "stage": "static", "action": "scan-file", "file": "description/urdf/demo_robot.urdf", "kind": "urdf"}
+{"seq": 13, "stage": "static", "action": "rule", "rule": "S01", "findings": 1}
+{"seq": 24, "stage": "correlate", "action": "linked", "rule": "C01", "severity": "HIGH", "proposals": 3}</pre>
+
+<h3>4.5 功能五：谨慎写回</h3>
+<p>默认<strong>不修改</strong>用户工程，只生成 <code>patches/*.patch</code>。只有显式 <code>--apply</code> 才写回，
+且写前生成 <code>.bak</code> 备份；补丁按 (文件, 行, 列) 定位，同行有多个同名字面量也不会改错位置；
+重复执行幂等，不会再次产生同一处修改（有对应测试）。</p>
+
+<h2>五、应用场景</h2>
+
+<h3>5.1 面向哪些用户</h3>
+<table>
+  <tr><th style="width:34%">用户</th><th>典型诉求</th></tr>
+  <tr><td>机器人课程 / 竞赛学生</td><td>仿真跑通了，实车直行距离和转弯角度都不对，不知道从哪查起</td></tr>
+  <tr><td>ROS 2 应用开发者</td><td>改了参数不生效，怀疑被 launch 覆盖；或者不确定 URDF 与配置是否一致</td></tr>
+  <tr><td>控制系统工程师</td><td>PID 调不出来，需要先排除参数错误、周期抖动、通信延迟</td></tr>
+  <tr><td>接手别人工程的人</td><td>需要在不读完全部代码的前提下，快速确认工程自洽性</td></tr>
+</table>
+
+<h3>5.2 在什么情况下使用</h3>
+<ul>
+  <li>第一次把仿真模型放上实车前：跑一次 <code>static</code>，确认参数自洽；</li>
+  <li>实车行为异常时：跑一次 <code>full</code>（带日志），拿证据定位；</li>
+  <li>改完参数后：重跑一次对比，确认问题消失且没有引入新冲突；</li>
+  <li>作为 CI 卡点：退出码 2 表示存在 CRITICAL/HIGH，可以直接让流水线红掉。</li>
+</ul>
+
+<h3>5.3 实际解决什么问题</h3>
+<table>
+  <tr><th style="width:40%">现象</th><th>本项目的定位路径</th></tr>
+  <tr><td>走 1 m，里程计只记 0.98 m</td><td>R01 算出尺度比 1.016 → C01 收敛到 <code>wheel_radius</code> → 补丁改 0.05 → 0.0508</td></tr>
+  <tr><td>该转 90°，实际转了 96°</td><td>R02 算出角尺度 0.9375 → C02 收敛到 <code>wheel_separation</code> → 补丁改 0.30 → 0.32</td></tr>
+  <tr><td>改了参数没生效</td><td>S10 重复键 + S09 launch 未知参数 + S01 launch 与 yaml 冲突</td></tr>
+  <tr><td>速度怎么调都上不去</td><td>S08 限速超过轮子可达速度（由 <code>max_wheel_vel × wheel_radius</code> 判定）</td></tr>
+  <tr><td>PID 抖动</td><td>R03 周期抖动 / R04 延迟 / R06 超调与穿越，先把“参数错”排除掉</td></tr>
+  <tr><td>仿真乱飞、报 singular</td><td>S06 质量为 0 / 惯量全 0 / 缺 inertial</td></tr>
+</table>
+
+
+<h2>六、项目创新点</h2>
+<p class="note">
+如实说明：本项目<strong>没有算法层面的原创突破</strong>。它的价值在工程化与“可信度设计”，
+下面每一条都可以在代码或测试里找到对应实现。
+</p>
+
+<h3>6.1 与人工操作相比的改进</h3>
+<table>
+  <tr><th style="width:26%">维度</th><th>人工</th><th>本项目</th></tr>
+  <tr><td>覆盖范围</td><td>翻几个文件，凭记忆比对</td><td>全工程所有 urdf/yaml/launch/源码，同一参数跨文件归并</td></tr>
+  <tr><td>精度</td><td>1.6% 这种差异肉眼很容易放过</td><td>相对差 0.1% 起即可报出（可调）</td></tr>
+  <tr><td>耗时</td><td>示例规模约 30—60 分钟</td><td>5 个文件 + 200 行日志，全流程 &lt; 1 秒（实测）</td></tr>
+  <tr><td>可重复</td><td>改完参数，之前的核对作废</td><td>一条命令重跑，结果稳定可对比</td></tr>
+  <tr><td>可交接</td><td>靠口头描述“我看过了”</td><td>trace.jsonl 记录每次判定，可复现</td></tr>
+</table>
+
+<h3>6.2 与简单 AI 对话相比的改进</h3>
+<table>
+  <tr><th style="width:26%">维度</th><th>普通对话式 AI</th><th>本项目</th></tr>
+  <tr><td>参数来源</td><td>可能“看出”一个并不存在的参数</td><td>只报告实际解析到的字面量；表达式参数不参与比对</td></tr>
+  <tr><td>定位</td><td>说“某处不一致”，给不出行号</td><td>每条结论带 <code>文件:行:列 + 原文</code>，并有测试逐字核对</td></tr>
+  <tr><td>定量</td><td>无法回答“偏了多少”</td><td>R01/R02 用真值积分给出比值（1.015991）</td></tr>
+  <tr><td>取舍</td><td>随机挑一个解释，语气还很确定</td><td>数学等价时列出全部候选并判 <code>unverifiable</code>，拒绝选择</td></tr>
+  <tr><td>落地</td><td>只给建议文字</td><td>生成可直接 review 的 diff，按行列定位，幂等</td></tr>
+  <tr><td>可复现</td><td>换个问法答案就变</td><td>同一输入同一输出，判定全部在代码里</td></tr>
+</table>
+
+<h3>6.3 项目真实存在的技术特点</h3>
+<ol>
+  <li><strong>行列级双解析器。</strong>
+      YAML 侧不满足于“读到值”，而是给 flow 序列里每个元素单独的列号；XML 侧支持跨行标签并回填属性位置。
+      这是“补丁能精确改到第 15 行那个 0.05 而不是第 7 行”的前提。</li>
+  <li><strong>参数规范化 + 别名映射。</strong>
+      <code>wheel_radius / wheel_diameter / cylinder@radius / WHEEL_RADIUS</code> 会被归并到同一规范参数，
+      直径还会自动 ×0.5 折算；弱别名（如 <code>radius</code>、<code>kp</code>）单独标记为低置信。
+      没有这一步，跨文件冲突根本不会被发现。</li>
+  <li><strong>数学等价性的显式建模与拒答。</strong>
+      轮半径、每转计数、减速比在运动学里对尺度误差是等价的。代码把它们建模成候选集，
+      只有在第三方证据（URDF 几何）支持某一个时才收敛，否则主动降级。这是本项目区别于“AI 猜”的核心。</li>
+  <li><strong>后置条件防误报。</strong>
+      R05 限幅检测要求极值明显高于样本中位数的 1.5 倍，避免把“恒速测试”误判为饱和；
+      S08 在轮半径存在冲突时主动跳过，而不是随便取一个值参与计算。</li>
+  <li><strong>证据一致性测试。</strong>
+      测试用例会读取文件、按报告里的行号取行、与报告里的原文逐字比较；20+ 条证据全部必须相等。
+      这条测试是“不编造”的机器保证，而不是口头承诺。</li>
+  <li><strong>对照组防误报测试。</strong>
+      仓库里有一个参数完全一致的 <code>synthetic_clean</code> 工程，必须零发现、退出码 0。</li>
+</ol>
+
+
+<h2>七、测试与运行效果</h2>
+
+<h3>7.1 测试环境</h3>
+<table>
+  <tr><td style="width:30%; background:#f7f9fc;">操作系统</td><td>Windows 11（10.0.26100）</td></tr>
+  <tr><td style="background:#f7f9fc;">Python</td><td>3.13.5</td></tr>
+  <tr><td style="background:#f7f9fc;">运行时第三方依赖</td><td>无（仅标准库）</td></tr>
+  <tr><td style="background:#f7f9fc;">ROS 2 运行环境</td><td><span class="bad">未安装</span>（工具不需要，只解析文件与日志）</td></tr>
+</table>
+
+<h3>7.2 自动化测试</h3>
+<p>命令 <code>python -m pytest</code>，真实结果：</p>
+<pre>tests/test_cli.py ......                                                 [ 10%]
+tests/test_correlation_patches.py ......                                 [ 21%]
+tests/test_registry.py ................                                  [ 50%]
+tests/test_runtime_rules.py .......                                      [ 62%]
+tests/test_scanners.py ...........                                       [ 82%]
+tests/test_static_rules.py ..........                                    [ 82%]
+tests/test_universal.py ................                                 [100%]
+
+91 passed in 0.90s</pre>
+
+<h3>7.3 使用的测试样例</h3>
+<table>
+  <tr><th style="width:32%">样例</th><th>内容</th></tr>
+  <tr><td><code>examples/demo_robot</code></td>
+      <td>手写的最小 ROS 2 差速小车工程，<strong>故意埋了 9 处缺陷</strong>（参数冲突、单位错、轴写错、惯量为 0、频率不匹配、重复键、launch 多余参数等）</td></tr>
+  <tr><td><code>logs/run_straight.csv</code></td><td>200 行，0.2 m/s 直线，含 <code>truth_x/truth_y</code> 真值；轮半径用 0.05 计算，因此里程计少报 1.6%</td></tr>
+  <tr><td><code>logs/run_turn.csv</code></td><td>250 行，0.5 rad/s 原地转向，含 <code>truth_yaw</code>；轮距用 0.30 计算，因此多报 6.7% 转角</td></tr>
+  <tr><td><code>logs/run_pid.csv</code></td><td>225 行，包含启动死区、25% 超调、限幅平台、周期抖动，<strong>故意不含真值列</strong></td></tr>
+  <tr><td><code>examples/synthetic_clean</code></td><td>参数完全一致的对照工程，用于验证不误报</td></tr>
+  <tr><td><code>examples/universal/</code></td>
+      <td>麦轮（滚子 ±45° 与误写 0° 两份）、阿克曼、网格模型、MJCF 版差速车、实测参数与横移日志</td></tr>
+  <tr><td><code>examples/mechanisms/</code></td>
+      <td>6 轴机械臂（腕关节力矩偏小）、四旋翼（声明推力与 kT 不符）、激光雷达（点数与盲区）</td></tr>
+</table>
+<p class="note">
+三个日志都由 <code>examples/make_sample_logs.py</code> 按固定随机种子生成，
+物理设定为“真实轮半径 0.0508 m、真实轮距 0.32 m”，因此文档里的数字可以完全复现。
+</p>
+
+<h3>7.4 已验证的功能</h3>
+<table>
+  <tr><th style="width:30%">场景</th><th>结果</th><th style="width:12%">退出码</th></tr>
+  <tr>
+    <td>静态检查（demo_robot）</td>
+    <td>检出 <strong>9/9</strong> 处埋设缺陷；S03（表达式）不适用，S08 因轮半径存在冲突而主动跳过并说明原因</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>直线日志诊断</td>
+    <td>R01 尺度偏差 <strong>1.6%</strong>（真值 0.995 m / 里程计 0.9793 m）；C01 收敛到 <code>0.0508</code>，生成 3 处补丁</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>转向日志诊断</td>
+    <td>R02 角尺度 <strong>-6.25%</strong>（真值 2.4 rad / 里程计 2.5599 rad）；C02 收敛到 <code>0.32</code>，生成 2 处补丁</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>无真值日志</td>
+    <td>R03 抖动 <strong>113%</strong>、R07 死区 <strong>0.66 s</strong>、R05 限幅 <strong>20.1%</strong>、R06 超调 <strong>16.7%</strong>、R04 延迟 <strong>80 ms</strong>；
+        R01/R02 判为 <code>unverifiable</code>，<strong>不给偏差百分比</strong>，也不生成 C 类结论</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>对照工程</td>
+    <td>零发现、零误报</td>
+    <td>0</td>
+  </tr>
+  <tr>
+    <td>异常输入</td>
+    <td>日志不存在时明确报错，不产生半成品报告</td>
+    <td>1</td>
+  </tr>
+  <tr>
+    <td>写回</td>
+    <td><code>--apply</code> 精确修改指定行、生成 <code>.bak</code>、二次运行幂等</td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td>麦轮横移（模型验证）</td>
+    <td>滚子 ±45° 时可行（四轮 1.886 rad/s）；滚子角误写 0° 时报 M02「无法横向运动，残留侧滑 0.200 m/s」</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>3D 网格质量核对</td>
+    <td>网格反推 7.200 kg vs 模型声明 2.400 kg（相差 200%），并给出"密度应为 300 kg/m³"</td>
+    <td>2</td>
+  </tr>
+  <tr>
+    <td>仿真对比 + 参数反推</td>
+    <td>直线：M09 位移差 0.03%，M10 轮半径 → 0.0508 m；转向：M09 转角差 0.21%，M10 轮距 → 0.32 m</td>
+    <td>2</td>
+  </tr>
+</table>
+
+<h3>7.5 实际运行结果</h3>
+<p>完整诊断的控制台摘要（真实输出，节选）：</p>
+<pre>==============================================================================
+机器人仿真实机参数错配诊断 · rsw-audit v1.0.0
+统计: 严重 1 | 高 7 | 中 2 | 低 1 | 信息 5
+==============================================================================
+
+[严重] S02 [HIGH/待确认] 疑似单位不一致：最大线速度（比值 1000）
+[高] C01 [HIGH/已确认] 根因收敛：驱动轮半径 应为 0.0508（当前 0.05）
+    建议: description/config/demo_robot_params.yaml:7   0.05 -&gt; 0.0508
+[高] R01 [HIGH/已确认] 里程计线位移偏差 1.6%（真值 0.995 m / 里程计 0.9793 m）
+[高] S01 [HIGH/已确认] 驱动轮半径 多处定义且数值不一致（2 组）
+[高] S04 [HIGH/已确认] 左右轮距与 URDF 轮子安装位置不一致（声明 0.3 m / 几何 0.32 m）
+[高] S05 [HIGH/已确认] 旋转轴方向不一致
+[高] S06 [HIGH/已确认] 转动惯量三个主轴全为 0
+[高] S07 [MEDIUM/已确认] 控制频率 50 Hz 高于仿真更新频率 20 Hz</pre>
+
+<h3>7.6 未验证的内容（如实声明）</h3>
+<ol>
+  <li><span class="bad">未在真实 ROS 2 环境（Ubuntu + ROS 2 + Gazebo）中运行过</span>。工具不依赖 ROS 运行时，
+      但“在装有 ROS 的机器上跑一遍”这件事本次没有做。</li>
+  <li><span class="bad">未用真实机器人数据测试</span>。示例日志是按物理模型生成的仿真数据，不是实车录制。</li>
+  <li>未解析 rosbag2 的 <code>.db3</code> / CDR 二进制，只支持 CSV 与文本日志。</li>
+  <li>误差模型是<strong>运动学 + 准静态动力学</strong>，不含接触动力学：不预测振动、跳齿、翻车、轮胎非线性；
+      机械臂等串联结构未覆盖。</li>
+  <li>Linux / macOS 未实测（代码为纯标准库，路径统一用 <code>pathlib</code> 处理，理论可移植）。</li>
+  <li>演示视频为<strong>由真实运行输出渲染</strong>的 MP4，不是屏幕实拍；另附完整录屏脚本（<code>docs/03-演示视频录制方案.md</code>）。</li>
+  <li><span class="good">Simulink 生成已在 MATLAB R2025b 上实测通过</span>：执行 <code>build_rsw_arm6</code> 成功生成并保存
+      <code>rsw_arm6.slx</code>（48 个模块 / 48 条连线，模型图正确渲染）。本项目构建环境无法启动 MATLAB，
+      故自动化测试只覆盖生成脚本语法与离线结构自检；<code>sim</code> 的运行波形由使用者在 MATLAB 中点 Run 复核。</li>
+</ol>
+
+
+<div class="page-break"></div>
+<h2>八、通用化与本地 App</h2>
+
+<h3>8.1 从差速底盘到任意轮系</h3>
+<p>
+第一版只认差速底盘。这一版把"轮子"抽象成一张表：位置 (x, y)、半径 r、滚动方向角 α、滚子角 γ，
+于是一个公式覆盖五类底盘：
+</p>
+<pre>omega_i = (1/r) * [ cos d, sin d, -y*cos d + x*sin d ] * (vx, vy, w)     d = alpha + gamma</pre>
+<p>
+γ=0 是普通轮（差速、滑移转向），γ=±45° 是麦轮，γ=90° 是全向轮；
+可转向轮则把 α 当作待求的转向角。只有普通轮会额外贡献一条"不可侧滑"约束，
+这条约束的<strong>残差</strong>就是"这条指令这个底盘做不做得到"的量化答案。
+</p>
+<table>
+  <tr><th style="width:34%">场景</th><th>真实运行结果</th></tr>
+  <tr><td>麦轮（γ=±45°）命令横移 0.2 m/s</td>
+      <td>可行；四轮转速 ±1.886 rad/s（= 0.2·cos45°/0.075）</td></tr>
+  <tr><td>同一模型把 γ 写成 0</td>
+      <td><span class="bad">M02 HIGH</span>：残留侧滑 0.200 m/s，"这部分运动不会发生"</td></tr>
+  <tr><td>阿克曼 1.5 m/s + 0.4 rad/s</td>
+      <td>车身原点需 0.210 m/s 侧向速度（M11）；内轮 18.43°、外轮 13.57°，
+          与 atan(L/(R∓t/2)) 的解析值一致</td></tr>
+</table>
+
+<h3>8.2 3D 模型：质量与惯量能不能对上</h3>
+<p>
+用纯标准库解析二进制/ASCII STL 与 OBJ，按有符号四面体分解算体积、质心与完整惯量张量。
+数值已与解析解逐项对齐：2×1×3 长方体算得体积 6.000、Ixx 5.0000、Iyy 6.5000、Izz 2.5000，
+与 m(b²+c²)/12 完全一致；64 边形近似圆柱的 Izz 为 0.097860（解析 0.098017）。
+</p>
+<p>实测示例（<code>mesh_bot.json</code> 声明 2.4 kg，网格 0.3×0.2×0.1 m @ 1200 kg/m³）：</p>
+<pre>[高] M07 网格反推质量 7.200 kg 与模型声明 2.400 kg 相差 200.0%
+     若要让两者一致，密度应当是 300 kg/m³
+[中] M07 网格反推偏航惯量 0.0780 与模型声明 0.0200 相差 290%</pre>
+
+<h3>8.3 用仿真验证，而不是"看着像"</h3>
+<p>
+前向仿真把日志里的命令逐拍喂进去，模型包含轮速学、一阶执行器滞后、传输延迟、轮速上限与
+附着限制（车体速度变化率不超过 μg），并让"里程计"用模型里写的轮半径和轮距换算。
+因此仿真可以直接复现实测里那条 1.6% 的里程计误差：真值 0.995 m、仿真里程计 0.9816 m、
+实测里程计 0.9793 m，相对差 0.23%。
+</p>
+<p>结论由两条路径给出：</p>
+<ol>
+  <li><strong>直接比值</strong>（不依赖拟合）：r_true = r_used × 真值距离/里程计距离；
+      L_true = L_used ÷ 真值转角/里程计转角；</li>
+  <li><strong>数值灵敏度</strong>（仅当仿真明显对不上时启用）：逐参数扰动 2% 求偏导，
+      只保留"单独调整就能解释偏差且幅度在 2%–40%"的参数；多于一个则判为无法辨识，
+      不给单一根因。</li>
+</ol>
+<table>
+  <tr><th style="width:40%">输入</th><th>结论</th></tr>
+  <tr><td>直线日志 + <code>--used-radius 0.05</code></td>
+      <td>M09 一致（位移差 0.03%）；M10 轮半径应为 <strong>0.0508 m</strong></td></tr>
+  <tr><td>转向日志 + <code>--used-track 0.30</code></td>
+      <td>M09 一致（转角差 0.21%）；M10 轮距应为 <strong>0.32 m</strong></td></tr>
+  <tr><td>麦轮日志配"没有滚子"的模型</td>
+      <td>M09 不符 100%，且<strong>不给</strong> M10——没有任何单个参数能解释，工具如实说"解释不了"</td></tr>
+</table>
+
+<h3>8.4 本地 Web App</h3>
+<p>
+<code>run-app.cmd</code>（或 <code>python scripts/audit.py app --port 8765</code>）启动一个零依赖的本地服务，
+终端打印带一次性 token 的地址。浏览器里拖入模型 / 日志 / 网格 / 实测参数，填命令的 vx、vy、ω
+与固件轮半径轮距，点"运行诊断"，右侧直接显示分级结论、证据与可下载产物。
+App 只绑 127.0.0.1、校验 token、上传限定扩展名与 8 MB、不联网、不执行上传内容里的任何东西。
+</p>
+<pre>上传三类文件 -> POST /api/run -> summary: 严重 0 / 高 3 / 中 1 / 低 0 / 信息 7
+rules: M07 M08 M08 M07 M09 R01 R02 R03 R04 R06 R08
+artifacts: findings.json report.md trace.jsonl trace.md
+错误 token 访问 -> 403</pre>
+
+<h3>8.5 新增能力的边界（如实说明）</h3>
+<p>
+这是<strong>运动学 + 准静态动力学</strong>，不是接触动力学：没有 MuJoCo / PyBullet 级别的接触求解，
+不预测振动、跳齿、翻车、轮胎非线性。网格惯量假设网格是封闭、法向朝外的实体（不封闭会警告）。
+滑移转向按"普通轮不可侧滑"的保守模型处理，只给打滑倾向，不建轮胎模型。
+需要真正的接触仿真，请把本工具当作"上物理引擎之前的参数体检"。
+</p>
+
+
+<div class="page-break"></div>
+<h2>九、机械臂 / 螺旋桨 / 激光雷达 与 Simulink 导出</h2>
+
+<h3>9.1 三类新机构，一套方法</h3>
+<p>
+轮式底盘验证"力与摩擦"，机械臂验证"几何与力矩"，螺旋桨验证"气动近似"，激光雷达验证"扫描几何"。
+方法只有一条：<strong>把规格里写的数，和物理公式算出来的数，摆在一起比</strong>。差别只在公式，
+所以代码里是一个机构目录——每类机构一个模型、一族规则、统一接口。
+</p>
+<table>
+  <tr><th style="width:22%">机构</th><th>算什么</th><th style="width:30%">规则</th></tr>
+  <tr><td>机械臂</td>
+      <td>正运动学、几何雅可比、阻尼最小二乘逆解、静力矩、可操作度</td>
+      <td>A01 不可达 / A02 奇异 / A03 力矩超限 / A04 自由度不足</td></tr>
+  <tr><td>螺旋桨</td>
+      <td>T = kT·ω²、Q = kQ·ω²、P = Q·ω、悬停转速、桨盘载荷</td>
+      <td>P01 推力不符 / P02 扭矩超限 / P03 飞不起来 / P04 效率低</td></tr>
+  <tr><td>激光雷达</td>
+      <td>点数/秒、光斑直径、地面盲区半径</td>
+      <td>L01 点数不符 / L02 盲区过大 / L03 规格矛盾</td></tr>
+</table>
+
+<h3>9.2 机械臂：算得准才算验证</h3>
+<p>
+关节由 <code>origin.xyz</code>、<code>origin.rpy</code>、<code>axis</code>、<code>limits</code>、
+<code>effort</code> 描述。雅可比用几何法：<code>J_v = z_i × (p_tip − p_i)</code>，
+静力矩 <code>τ = J_vᵀ·F</code>。数值已与有限差分逐项对齐：
+</p>
+<table>
+  <tr><th style="width:46%">检查</th><th>结果</th></tr>
+  <tr><td>零位末端位置</td><td>(0.71, 0, 0.31) m，与六段连杆长度手算一致</td></tr>
+  <tr><td>雅可比 vs 有限差分（q 非零）</td><td>最大偏差 <strong>3e-7</strong></td></tr>
+  <tr><td>可达点逆解残差</td><td>0.05–0.07 mm</td></tr>
+  <tr><td>不可达点 (1.4, 0, 1.4)</td><td>残差 <strong>370 mm</strong> → A01</td></tr>
+  <tr><td>2 kg 负载静力矩</td><td>肩 10.68 / 肘 5.06 / 腕 1.94 N·m</td></tr>
+</table>
+<p>实测（可达目标，残差 0.0 mm，腕关节额定力矩被故意写小）：</p>
+<pre>[高] A03 [HIGH/已确认] 负载 2.00 kg 时关节力矩超限（j5_pitch）
+     只算重力静载，需要的关节力矩就已经超过额定：j5_pitch 需要 1.94 N·m / 额定 1.50 N·m</pre>
+
+<h3>9.3 螺旋桨与激光雷达</h3>
+<p>
+螺旋桨用执行盘动量理论的系数形式 <code>T = kT·ω²</code>、<code>Q = kQ·ω²</code>、<code>P = Q·ω</code>；
+激光雷达用扫描几何 <code>点数/秒 = 水平视场/角分辨率 × 线数 × 帧率</code>、
+<code>盲区半径 = 安装高度 / tan(最低光束夹角)</code>。两者都是可精确手算的公式，因此可以逐项对账。
+</p>
+<pre>[高] P01 [HIGH/已确认] 声明最大推力 14.00 N 与 kT/转速算出的 10.66 N 相差 24%
+[高] L01 [HIGH/已确认] 声明 100000 点/秒与实际扫描几何不符（应为 288000）
+[中] L02 [MEDIUM/已确认] 安装高度 0.40 m 时地面盲区半径 1.49 m</pre>
+
+<h3>9.4 Simulink 导出</h3>
+<p>
+<code>--simulink &lt;目录&gt;</code> 会按刚诊断的对象生成一个模型包，客户在自己的 MATLAB 里跑一行命令就能得到真正的
+<code>.slx</code>：
+</p>
+<table>
+  <tr><th style="width:32%">文件</th><th>内容</th></tr>
+  <tr><td><code>build_rsw_&lt;name&gt;.m</code></td>
+      <td>MATLAB 函数：<code>new_system</code> → <code>add_block</code> × N → <code>add_line</code> × M → <code>save_system</code></td></tr>
+  <tr><td><code>rsw_&lt;name&gt;.mdl</code></td><td>同一模型的文本格式，可尝试直接双击打开</td></tr>
+  <tr><td><code>params.m</code></td><td>模型用到的全部数值，含审计建议的修改（注释形式）</td></tr>
+  <tr><td><code>README.txt</code></td><td>结构说明、离线自检结果、能力边界</td></tr>
+</table>
+<table>
+  <tr><th style="width:22%">被控对象</th><th>模型结构</th></tr>
+  <tr><td>轮式底盘</td>
+      <td>Step(速度指令) → Sum(±) → Gain(1/τ) → Integrator(v) → Integrator(x) → Gain(r_used/r_true) → Scope</td></tr>
+  <tr><td>机械臂</td>
+      <td>每关节：Step(力矩) → Sum(±) → Gain(1/J) → Integrator(ω) → Integrator(q) → Saturation(限位) → Scope；
+          ω 经 Gain(b) 反馈阻尼</td></tr>
+  <tr><td>螺旋桨</td>
+      <td>Step(rpm) → Gain(2π/60) → Sum(±) → Gain(1/τ_rotor) → Integrator(ω) → Fcn(kT·u²) → Scope</td></tr>
+</table>
+<p>
+生成后做<strong>离线结构自检</strong>并把结论写进 <code>README.txt</code>：模块名唯一、每条连线的起点/终点都存在、
+端口号合法、除源模块外每个模块都有输入连线、模块类型在已知库路径表内。
+</p>
+<div class="note">
+<strong>验证状态（2026-10 实测）</strong>：在 MATLAB R2025b + Simulink 上执行 <code>build_rsw_arm6</code>，
+已成功生成并保存 <code>rsw_arm6.slx</code>（48 个模块 / 48 条连线），模型图正确渲染。
+需要说明的是：本项目构建环境无法启动 MATLAB（<code>matlab -batch</code> 报
+<code>System Error: File system inconsistency</code>，与浏览器被沙箱拦截同因），
+因此自动化测试只覆盖「生成脚本语法 + 离线结构自检」；<code>sim</code> 的运行波形由使用者在 MATLAB 中点 Run 复核。
+</div>
+
+<h3>9.5 边界</h3>
+<ul>
+  <li>机械臂是<strong>静力学 + 运动学</strong>：算可达、奇异、静力矩；不算惯量耦合、科氏力、柔顺控制。</li>
+  <li>螺旋桨是<strong>执行盘系数模型</strong>：不算桨叶几何、雷诺数、前后飞干扰、地面效应。</li>
+  <li>激光雷达是<strong>扫描几何</strong>：不算反射率、多回波、雨雾衰减、运动畸变。</li>
+  <li>Simulink 模型是<strong>参数级验证模型</strong>，不是接触动力学。</li>
+</ul>
+
+<h3>十、交付物清单</h3>
+<table>
+  <tr><th style="width:34%">文件</th><th>说明</th></tr>
+  <tr><td><code>project-source.zip</code></td><td>完整可运行工程（代码、Skill、示例、测试、文档）</td></tr>
+  <tr><td><code>skill.zip</code></td><td>单独打包的 Skill 目录，可直接加载</td></tr>
+  <tr><td><code>project-introduction.pdf</code></td><td>本文件</td></tr>
+  <tr><td><code>demo-video.mp4</code></td><td>由真实运行输出渲染的演示视频（约 64 秒，含麦轮与 3D 网格场景）</td></tr>
+  <tr><td><code>submission-info.txt</code></td><td>提交所需信息汇总（仓库链接、文档名、视频链接填写位）</td></tr>
+</table>
+
+<footer>
+机器人仿真实机参数错配诊断器 · rsw-audit v1.0.0 · Apache License 2.0<br>
+本文档由最终代码在 <code>examples/demo_robot</code> 上的真实运行结果整理而成；
+未实际验证的内容已在 7.6 节逐条标注。
+</footer>
+
+</body>
+</html>

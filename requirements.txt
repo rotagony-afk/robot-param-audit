@@ -1,0 +1,8 @@
+# rsw-audit has NO third-party runtime dependency.
+#
+# It intentionally uses only the Python standard library (>= 3.9) so that it can
+# run on a freshly installed robot workstation, inside a competition sandbox, or
+# in CI without network access.
+#
+# Optional, only for development / reproducing the tests:
+#   pytest>=7.0

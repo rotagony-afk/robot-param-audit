@@ -1,0 +1,15 @@
+{
+  "name": "quad_x",
+  "mass": 2.4,
+  "rotor": {
+    "name": "quad_x",
+    "diameter_m": 0.254,
+    "count": 4,
+    "kT": 1.2e-05,
+    "kQ": 2e-07,
+    "max_rpm": 9000,
+    "motor_torque_limit": 0.45,
+    "declared_max_thrust": 14.0,
+    "total_mass_kg": 2.4
+  }
+}

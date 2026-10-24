@@ -1,0 +1,23 @@
+# demo_robot configuration (ROS 2 style)
+# Two defects are planted on purpose:
+#   1. wheel_radius here (0.05) disagrees with the URDF geometry (0.0508)
+#   2. wheel_radius is declared twice, so the second one silently wins
+demo_robot:
+  ros__parameters:
+    wheel_radius: 0.05
+    wheel_separation: 0.30
+    ticks_per_rev: 1024
+    gear_ratio: 30.0
+    control_rate: 50.0
+    max_linear_vel: 0.5
+    max_angular_vel: 1.5
+    max_wheel_vel: 8.0
+    wheel_radius: 0.05
+    left_wheel_pid:
+      kp: 1.2
+      ki: 0.05
+      kd: 0.01
+    right_wheel_pid:
+      kp: 1.2
+      ki: 0.05
+      kd: 0.01

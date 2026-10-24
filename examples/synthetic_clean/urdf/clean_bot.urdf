@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!-- Minimal, fully consistent reference project: every source agrees. -->
+<robot name="clean_bot">
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0.03" rpy="0 0 0"/>
+      <mass value="1.5"/>
+      <inertia ixx="0.004" iyy="0.005" izz="0.006" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <link name="left_wheel">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.00005" iyy="0.00009" izz="0.00009" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual><geometry><cylinder radius="0.05" length="0.025"/></geometry></visual>
+  </link>
+  <link name="right_wheel">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.00005" iyy="0.00009" izz="0.00009" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual><geometry><cylinder radius="0.05" length="0.025"/></geometry></visual>
+  </link>
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_wheel"/>
+    <origin xyz="0 0.15 0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <origin xyz="0 -0.15 0.05" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <gazebo>
+    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <update_rate>20</update_rate>
+      <wheel_separation>0.30</wheel_separation>
+      <wheel_diameter>0.10</wheel_diameter>
+    </plugin>
+  </gazebo>
+</robot>

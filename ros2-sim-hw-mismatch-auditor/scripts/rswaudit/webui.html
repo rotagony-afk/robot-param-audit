@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>rsw-audit · 机器人参数与模型验证</title>
+<style>
+  :root {
+    --bg: #f4f6fa; --panel: #ffffff; --ink: #1f2430; --dim: #6b7684;
+    --line: #dbe2ec; --accent: #2f6fd0; --deep: #14305c;
+    --crit: #b3261e; --high: #c25e00; --med: #a07a00; --low: #4a6b8a;
+    --ok: #1d7a3c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+         font-size: 14px; line-height: 1.6; }
+  header { background: var(--deep); color: #fff; padding: 14px 22px;
+           display: flex; align-items: baseline; gap: 14px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .ver { font-size: 12px; opacity: .75; }
+  main { display: grid; grid-template-columns: 340px 1fr; gap: 16px;
+         padding: 16px 22px 40px; align-items: start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line);
+          border-radius: 8px; padding: 14px 16px; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; color: var(--deep);
+             border-left: 3px solid var(--accent); padding-left: 8px; }
+  label { display: block; font-size: 12px; color: var(--dim); margin: 10px 0 3px; }
+  input[type=number], select, input[type=text] {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--line);
+    border-radius: 5px; font-size: 13px; color: var(--ink); background: #fff; }
+  .drop { border: 1px dashed #b9c4d4; border-radius: 6px; padding: 10px;
+          text-align: center; color: var(--dim); font-size: 12px; cursor: pointer;
+          background: #fbfcfe; }
+  .drop.has { border-color: var(--ok); color: var(--ok); background: #f2fbf4; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button { width: 100%; margin-top: 14px; padding: 9px 12px; border: 0;
+           border-radius: 6px; background: var(--accent); color: #fff;
+           font-size: 14px; cursor: pointer; }
+  button:disabled { background: #9fb3cc; cursor: default; }
+  button.ghost { background: #eef2f8; color: var(--deep); margin-top: 8px; }
+  .status { margin-top: 10px; font-size: 12px; color: var(--dim); min-height: 18px; }
+  .status.err { color: var(--crit); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chip { padding: 3px 10px; border-radius: 20px; font-size: 12px;
+          background: #eef2f8; color: var(--deep); }
+  .chip.crit { background: #fdeceb; color: var(--crit); }
+  .chip.high { background: #fdf1e3; color: var(--high); }
+  .chip.med  { background: #fbf6e0; color: var(--med); }
+  .chip.ok   { background: #eaf6ee; color: var(--ok); }
+  .finding { border: 1px solid var(--line); border-left-width: 4px;
+             border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; }
+  .finding.CRITICAL { border-left-color: var(--crit); }
+  .finding.HIGH { border-left-color: var(--high); }
+  .finding.MEDIUM { border-left-color: var(--med); }
+  .finding.LOW { border-left-color: var(--low); }
+  .finding.INFO { border-left-color: var(--accent); }
+  .finding .head { display: flex; gap: 8px; align-items: baseline; }
+  .finding .rule { font-weight: 700; color: var(--deep); font-size: 12px; }
+  .finding .title { font-weight: 600; }
+  .finding .meta { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .finding .body { margin-top: 6px; font-size: 13px; white-space: pre-wrap; }
+  .finding .ev { margin-top: 6px; font-size: 12px; color: var(--dim); }
+  .finding .ev code { background: #f2f5f9; padding: 0 3px; border-radius: 3px; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--deep); font-size: 13px; }
+  pre { background: #f7f9fc; border: 1px solid var(--line); border-radius: 6px;
+        padding: 10px; overflow: auto; max-height: 460px; font-size: 12px;
+        font-family: Consolas, monospace; white-space: pre-wrap; }
+  .files { margin-top: 10px; font-size: 12px; }
+  .files a { color: var(--accent); text-decoration: none; margin-right: 12px; }
+  .hint { font-size: 12px; color: var(--dim); margin-top: 8px; }
+  .empty { color: var(--dim); font-size: 13px; padding: 20px 0; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>rsw-audit · 机器人参数与模型验证</h1>
+  <span class="ver" id="ver">v1.0.0</span>
+</header>
+<main>
+  <section class="card">
+    <h2>1. 模型与实测</h2>
+
+    <label>模型文件（必填）</label>
+    <div class="drop" id="dropModel" data-for="model">点击或拖入 URDF / Xacro / MJCF / SDF / JSON</div>
+    <input type="file" id="fileModel" accept=".urdf,.xacro,.xml,.sdf,.json" hidden>
+
+    <label>运行日志（可选，用于仿真对比与参数拟合）</label>
+    <div class="drop" id="dropLog" data-for="log">点击或拖入 CSV / 文本日志</div>
+    <input type="file" id="fileLog" accept=".csv,.txt,.log" hidden>
+
+    <label>3D 网格（可选，反推质量与惯量）</label>
+    <div class="drop" id="dropMesh" data-for="mesh">点击或拖入 STL / OBJ</div>
+    <input type="file" id="fileMesh" accept=".stl,.obj" hidden>
+
+    <label>实测参数（可选，JSON）</label>
+    <div class="drop" id="dropReality" data-for="reality">wheel_radius / mass / friction</div>
+    <input type="file" id="fileReality" accept=".json" hidden>
+
+    <h2 style="margin-top:16px;">2. 要验证的命令</h2>
+    <div class="row">
+      <div><label>线速度 m/s</label><input type="number" id="speed" value="0.3" step="0.05"></div>
+      <div><label>角速度 rad/s</label><input type="number" id="yawRate" value="0" step="0.05"></div>
+    </div>
+    <div class="row">
+      <div><label>横向速度 m/s</label><input type="number" id="lateral" value="0" step="0.05"></div>
+      <div><label>网格密度 kg/m³</label><input type="number" id="density" value="1000" step="50"></div>
+    </div>
+    <div class="row">
+      <div><label>固件轮半径 m</label><input type="number" id="usedRadius" placeholder="默认取模型值" step="0.0001"></div>
+      <div><label>固件轮距 m</label><input type="number" id="usedTrack" placeholder="默认取模型值" step="0.001"></div>
+    </div>
+
+    <button id="run">运行诊断</button>
+    <button class="ghost" id="clear">清空本会话文件</button>
+    <div class="status" id="status">等待上传模型…</div>
+    <div class="hint">所有计算都在本机完成，不上传任何数据到网络。</div>
+  </section>
+
+  <section class="card">
+    <h2>诊断结果</h2>
+    <div id="summary" class="chips"></div>
+    <div id="findings"><div class="empty">上传模型后点“运行诊断”。</div></div>
+    <div class="files" id="files"></div>
+    <div id="notes" class="hint"></div>
+    <details id="reportBox" style="display:none;">
+      <summary>完整报告 report.md</summary>
+      <pre id="report"></pre>
+    </details>
+  </section>
+</main>
+
+<script>
+const TOKEN = new URLSearchParams(location.search).get("token") || "";
+const SESSION = Math.random().toString(16).slice(2, 10) + Date.now().toString(16).slice(-4);
+const picked = { model: null, log: null, mesh: null, reality: null };
+
+function q(id) { return document.getElementById(id); }
+function esc(text) {
+  return String(text == null ? "" : text)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function api(path) {
+  return path + (path.indexOf("?") >= 0 ? "&" : "?") + "s=" + SESSION + "&token=" + TOKEN;
+}
+function setStatus(text, isError) {
+  const box = q("status");
+  box.textContent = text;
+  box.className = "status" + (isError ? " err" : "");
+}
+
+function bindDrop(dropId, inputId, key) {
+  const drop = q(dropId);
+  const input = q(inputId);
+  drop.addEventListener("click", function () { input.click(); });
+  drop.addEventListener("dragover", function (ev) { ev.preventDefault(); });
+  drop.addEventListener("drop", function (ev) {
+    ev.preventDefault();
+    if (ev.dataTransfer.files.length) { upload(ev.dataTransfer.files[0], key, drop); }
+  });
+  input.addEventListener("change", function () {
+    if (input.files.length) { upload(input.files[0], key, drop); }
+  });
+}
+
+function upload(file, key, drop) {
+  const reader = new FileReader();
+  drop.textContent = "上传中… " + file.name;
+  reader.onload = function () {
+    const bytes = new Uint8Array(reader.result);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) { binary += String.fromCharCode(bytes[i]); }
+    fetch(api("/api/upload"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-RSW-Token": TOKEN },
+      body: JSON.stringify({ name: file.name, data: btoa(binary) })
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data.error) {
+        drop.textContent = data.error;
+        drop.className = "drop";
+        setStatus(data.error, true);
+        return;
+      }
+      picked[key] = data.name;
+      drop.textContent = data.name + "  (" + Math.round(data.size / 1024) + " KB)";
+      drop.className = "drop has";
+      setStatus("已就绪：" + data.name);
+    }).catch(function (err) {
+      setStatus("上传失败：" + err, true);
+    });
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function num(id) {
+  const raw = q(id).value;
+  return raw === "" ? null : Number(raw);
+}
+
+function render(data) {
+  const s = data.summary;
+  const chips = [
+    ["严重 " + s.CRITICAL, "crit"], ["高 " + s.HIGH, "high"],
+    ["中 " + s.MEDIUM, "med"], ["低 " + s.LOW, ""], ["信息 " + s.INFO, ""]
+  ];
+  q("summary").innerHTML = chips.map(function (item) {
+    return '<span class="chip ' + item[1] + '">' + esc(item[0]) + "</span>";
+  }).join("") + (data.blocking === 0
+    ? '<span class="chip ok">无阻塞问题</span>'
+    : '<span class="chip crit">需处理 ' + data.blocking + " 项</span>");
+
+  const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };
+  const list = data.findings.slice().sort(function (a, b) {
+    return (order[a.severity] - order[b.severity]) ||
+           (a.rule < b.rule ? -1 : 1);
+  });
+  if (!list.length) {
+    q("findings").innerHTML = '<div class="empty">没有发现任何问题。</div>';
+  } else {
+    q("findings").innerHTML = list.map(function (f) {
+      const ev = (f.evidence || []).slice(0, 6).map(function (e) {
+        return "<div><code>" + esc(e.location) + "</code> " +
+               (e.locator ? esc(e.locator) : "") +
+               (e.excerpt ? " · " + esc(e.excerpt.slice(0, 90)) : "") + "</div>";
+      }).join("");
+      const props = (f.proposals || []).map(function (p) {
+        return "<div>建议 <code>" + esc(p.evidence.location) + "</code> " +
+               esc(p.old_text) + " → " + esc(p.new_text) + "</div>";
+      }).join("");
+      return '<div class="finding ' + esc(f.severity) + '">' +
+        '<div class="head"><span class="rule">' + esc(f.rule) + "</span>" +
+        '<span class="title">' + esc(f.title) + "</span></div>" +
+        '<div class="meta">' + esc(f.severity) + " · 置信度 " + esc(f.confidence) +
+        " · " + esc(f.status) + "</div>" +
+        '<div class="body">' + esc(f.detail) + "</div>" +
+        (ev ? '<div class="ev">' + ev + "</div>" : "") +
+        (props ? '<div class="ev">' + props + "</div>" : "") +
+        "</div>";
+    }).join("");
+  }
+  q("files").innerHTML = (data.artifacts || []).map(function (name) {
+    return '<a href="/out/' + data.session + "/" + encodeURIComponent(name) +
+           "?token=" + TOKEN + '" target="_blank">' + esc(name) + "</a>";
+  }).join("");
+  q("notes").innerHTML = (data.notes || []).map(function (n) {
+    return "<div>· " + esc(n) + "</div>";
+  }).join("");
+  q("report").textContent = data.report || "";
+  q("reportBox").style.display = "block";
+}
+
+q("run").addEventListener("click", function () {
+  if (!picked.model) { setStatus("请先上传模型文件", true); return; }
+  const button = q("run");
+  button.disabled = true;
+  setStatus("正在解析模型并仿真…");
+  const payload = {
+    model: picked.model, log: picked.log, mesh: picked.mesh,
+    reality: picked.reality,
+    speed: num("speed") || 0.3, yaw_rate: num("yawRate") || 0,
+    lateral: num("lateral") || 0, density: num("density"),
+    used_radius: num("usedRadius"), used_track: num("usedTrack")
+  };
+  fetch(api("/api/run"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-RSW-Token": TOKEN },
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json(); }).then(function (data) {
+    button.disabled = false;
+    if (data.error) { setStatus(data.error, true); return; }
+    setStatus("完成：" + data.findings.length + " 条结论");
+    render(data);
+  }).catch(function (err) {
+    button.disabled = false;
+    setStatus("运行失败：" + err, true);
+  });
+});
+
+q("clear").addEventListener("click", function () {
+  fetch(api("/api/clear"), { method: "POST", headers: { "X-RSW-Token": TOKEN } })
+    .then(function () {
+      picked.model = picked.log = picked.mesh = picked.reality = null;
+      ["dropModel", "dropLog", "dropMesh", "dropReality"].forEach(function (id) {
+        const el = q(id);
+        el.className = "drop";
+        el.textContent = el.dataset.original || el.textContent;
+      });
+      q("findings").innerHTML = '<div class="empty">已清空。</div>';
+      q("summary").innerHTML = "";
+      q("reportBox").style.display = "none";
+      setStatus("已清空本会话文件");
+    });
+});
+
+document.querySelectorAll(".drop").forEach(function (el) {
+  el.dataset.original = el.textContent;
+});
+bindDrop("dropModel", "fileModel", "model");
+bindDrop("dropLog", "fileLog", "log");
+bindDrop("dropMesh", "fileMesh", "mesh");
+bindDrop("dropReality", "fileReality", "reality");
+
+fetch(api("/api/state")).then(function (r) { return r.json(); }).then(function (data) {
+  if (data.version) { q("ver").textContent = "v" + data.version; }
+  if (data.error) { setStatus(data.error, true); }
+});
+</script>
+</body>
+</html>

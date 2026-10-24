@@ -1,0 +1,176 @@
+{
+  "name": "arm6",
+  "arm": {
+    "name": "arm6",
+    "payload_kg": 2.0,
+    "tip_offset": [
+      0.0,
+      0.0,
+      0.09
+    ],
+    "joints": [
+      {
+        "name": "j1_yaw",
+        "type": "revolute",
+        "axis": [
+          0,
+          0,
+          1
+        ],
+        "origin": {
+          "xyz": [
+            0,
+            0,
+            0.12
+          ],
+          "rpy": [
+            0,
+            0,
+            0
+          ]
+        },
+        "limits": [
+          -170,
+          170
+        ],
+        "effort": 60.0,
+        "velocity": 120
+      },
+      {
+        "name": "j2_shoulder",
+        "type": "revolute",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "origin": {
+          "xyz": [
+            0,
+            0,
+            0.1
+          ],
+          "rpy": [
+            0,
+            0,
+            0
+          ]
+        },
+        "limits": [
+          -110,
+          110
+        ],
+        "effort": 60.0,
+        "velocity": 120
+      },
+      {
+        "name": "j3_elbow",
+        "type": "revolute",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "origin": {
+          "xyz": [
+            0.3,
+            0,
+            0
+          ],
+          "rpy": [
+            0,
+            0,
+            0
+          ]
+        },
+        "limits": [
+          -150,
+          150
+        ],
+        "effort": 22.0,
+        "velocity": 150
+      },
+      {
+        "name": "j4_roll",
+        "type": "revolute",
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "origin": {
+          "xyz": [
+            0.28,
+            0,
+            0
+          ],
+          "rpy": [
+            0,
+            0,
+            0
+          ]
+        },
+        "limits": [
+          -180,
+          180
+        ],
+        "effort": 6.0,
+        "velocity": 180
+      },
+      {
+        "name": "j5_pitch",
+        "type": "revolute",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "origin": {
+          "xyz": [
+            0.07,
+            0,
+            0
+          ],
+          "rpy": [
+            0,
+            0,
+            0
+          ]
+        },
+        "limits": [
+          -120,
+          120
+        ],
+        "effort": 1.5,
+        "velocity": 180
+      },
+      {
+        "name": "j6_roll",
+        "type": "revolute",
+        "axis": [
+          1,
+          0,
+          0
+        ],
+        "origin": {
+          "xyz": [
+            0.06,
+            0,
+            0
+          ],
+          "rpy": [
+            0,
+            0,
+            0
+          ]
+        },
+        "limits": [
+          -360,
+          360
+        ],
+        "effort": 2.0,
+        "velocity": 240
+      }
+    ]
+  }
+}

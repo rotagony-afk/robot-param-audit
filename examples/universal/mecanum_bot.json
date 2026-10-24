@@ -1,0 +1,51 @@
+{
+  "name": "mecanum_bot",
+  "drive": "mecanum",
+  "chassis": {
+    "mass": 12.0,
+    "inertia_zz": 0.36,
+    "wheelbase": 0.44,
+    "track": 0.36
+  },
+  "wheel_radius": 0.075,
+  "motor": {
+    "stall_torque": 1.2,
+    "no_load_omega": 25.0
+  },
+  "max_omega": 20.0,
+  "env": {
+    "friction": 0.6,
+    "gravity": 9.81
+  },
+  "wheels": [
+    {
+      "name": "fl",
+      "x": 0.22,
+      "y": 0.18,
+      "roller_deg": 45
+    },
+    {
+      "name": "fr",
+      "x": 0.22,
+      "y": -0.18,
+      "roller_deg": -45
+    },
+    {
+      "name": "rl",
+      "x": -0.22,
+      "y": 0.18,
+      "roller_deg": -45
+    },
+    {
+      "name": "rr",
+      "x": -0.22,
+      "y": -0.18,
+      "roller_deg": 45
+    }
+  ],
+  "reality": {
+    "wheel_radius": 0.0752,
+    "mass": 12.4,
+    "friction": 0.55
+  }
+}

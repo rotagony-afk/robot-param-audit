@@ -1,0 +1,22 @@
+{
+  "name": "mesh_bot",
+  "drive": "differential",
+  "chassis": {
+    "mass": 2.4,
+    "inertia_zz": 0.02
+  },
+  "wheel_radius": 0.05,
+  "max_omega": 20.0,
+  "wheels": [
+    {
+      "name": "left",
+      "x": 0.0,
+      "y": 0.15
+    },
+    {
+      "name": "right",
+      "x": 0.0,
+      "y": -0.15
+    }
+  ]
+}
