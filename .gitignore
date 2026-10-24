@@ -12,3 +12,4 @@ dist/
 *.egg-info/
 docs/project-introduction.pdf
 docs/demo-video.mp4
+docs/_out*/

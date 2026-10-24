@@ -251,7 +251,7 @@ def main() -> int:
         print("full run produced no output", file=sys.stderr)
         return 1
     kept = [line for line in lines if line.strip()][:28]
-    shown = ["$ " + cmd, ""]
+    shown = wrap("$ " + cmd) + [""]
     emit(frames, terminal_frame("PowerShell  —  rsw-audit full", shown), FPS // 2, tmp)
     for line in kept:
         for part in wrap(line):
@@ -286,7 +286,7 @@ def main() -> int:
            "--lateral 0.2 --speed 0")
     lines, code = run(audit + ["model", "--model", "examples/universal/mecanum_no_rollers.json",
                                "--lateral", "0.2", "--speed", "0", "--out", "docs/_out-mecanum"])
-    shown = ["$ " + cmd, ""]
+    shown = wrap("$ " + cmd) + [""]
     emit(frames, terminal_frame("PowerShell  —  模型验证：这个底盘能不能横移", shown), FPS // 2, tmp)
     for line in [item for item in lines if item.strip()][:14]:
         for part in wrap(line):
@@ -303,7 +303,7 @@ def main() -> int:
     lines, code = run(audit + ["model", "--model", "examples/universal/mesh_bot.json",
                                "--mesh", "examples/universal/chassis.stl",
                                "--density", "1200", "--out", "docs/_out-mesh"])
-    shown = ["$ " + cmd, ""]
+    shown = wrap("$ " + cmd) + [""]
     emit(frames, terminal_frame("PowerShell  —  3D 网格：质量对得上吗", shown), FPS // 2, tmp)
     for line in [item for item in lines if item.strip()][:12]:
         for part in wrap(line):
@@ -314,7 +314,85 @@ def main() -> int:
                                 "体积由网格反推，质量=体积×密度：7.2 kg vs 声明的 2.4 kg"),
          FPS * 2, tmp)
 
-    # ---- scene 9: summary ------------------------------------------------ #
+    # ---- scene 9: arm ---------------------------------------------------------- #
+    cmd = ("python scripts/audit.py model --model examples/mechanisms/arm6.json "
+           "--payload 2.0 --target 0.45,0,0.30")
+    lines, code = run(audit + ["model", "--model", "examples/mechanisms/arm6.json",
+                               "--payload", "2.0", "--target", "0.45,0,0.30",
+                               "--out", "docs/_out-arm"])
+    shown = wrap("$ " + cmd) + [""]
+    emit(frames, terminal_frame("PowerShell  —  机械臂：够得着吗？力矩够吗？", shown), FPS // 2, tmp)
+    for line in [item for item in lines if item.strip()][:14]:
+        for part in wrap(line):
+            shown.append(part)
+            emit(frames, terminal_frame("PowerShell  —  机械臂：够得着吗？力矩够吗？", shown),
+                 FPS // 3, tmp)
+    emit(frames, terminal_frame("PowerShell  —  机械臂：够得着吗？力矩够吗？", shown,
+                                "正运动学 + 几何雅可比 + 阻尼最小二乘逆解 + 静力矩：腕关节超载被点名"),
+         FPS * 2, tmp)
+
+    # ---- scene 10: rotor ------------------------------------------------------- #
+    cmd = "python scripts/audit.py model --model examples/mechanisms/quad_x.json"
+    lines, code = run(audit + ["model", "--model", "examples/mechanisms/quad_x.json",
+                               "--out", "docs/_out-quad"])
+    shown = wrap("$ " + cmd) + [""]
+    emit(frames, terminal_frame("PowerShell  —  螺旋桨：声明的推力可信吗", shown), FPS // 2, tmp)
+    for line in [item for item in lines if item.strip()][:12]:
+        for part in wrap(line):
+            shown.append(part)
+            emit(frames, terminal_frame("PowerShell  —  螺旋桨：声明的推力可信吗", shown),
+                 FPS // 3, tmp)
+    emit(frames, terminal_frame("PowerShell  —  螺旋桨：声明的推力可信吗", shown,
+                                "T = kT * omega^2：声明 14 N，按系数与转速只有 10.66 N"),
+         FPS * 2, tmp)
+
+    # ---- scene 11: lidar ------------------------------------------------------- #
+    cmd = "python scripts/audit.py model --model examples/mechanisms/lidar360.json"
+    lines, code = run(audit + ["model", "--model", "examples/mechanisms/lidar360.json",
+                               "--out", "docs/_out-lidar"])
+    shown = wrap("$ " + cmd) + [""]
+    emit(frames, terminal_frame("PowerShell  —  激光雷达：点数与地面盲区", shown), FPS // 2, tmp)
+    for line in [item for item in lines if item.strip()][:12]:
+        for part in wrap(line):
+            shown.append(part)
+            emit(frames, terminal_frame("PowerShell  —  激光雷达：点数与地面盲区", shown),
+                 FPS // 3, tmp)
+    emit(frames, terminal_frame("PowerShell  —  激光雷达：点数与地面盲区", shown,
+                                "几何给出 28.8 万点/秒；装 0.4 m 高留下 1.49 m 地面盲区"),
+         FPS * 2, tmp)
+
+    # ---- scene 12: simulink ---------------------------------------------------- #
+    cmd = ("python scripts/audit.py model --model examples/mechanisms/arm6.json "
+           "--payload 2.0 --target 0.45,0,0.30 --simulink docs/_out-sl")
+    lines, code = run(audit + ["model", "--model", "examples/mechanisms/arm6.json",
+                               "--payload", "2.0", "--target", "0.45,0,0.30",
+                               "--simulink", "docs/_out-sl", "--out", "docs/_out-sl-audit"])
+    generated = sorted(p.name for p in (ROOT / "docs/_out-sl").iterdir()) if (ROOT / "docs/_out-sl").exists() else []
+    model_dir = ROOT / "docs/_out-sl" / "mdl"
+    if model_dir.exists():
+        generated += ["mdl/" + p.name for p in sorted(model_dir.iterdir())]
+    script_head = []
+    builder = ROOT / "docs/_out-sl" / "build_rsw_arm6.m"
+    if builder.exists():
+        script_head = builder.read_text(encoding="utf-8").splitlines()[:6]
+
+    shown = wrap("$ " + cmd) + [""]
+    emit(frames, terminal_frame("PowerShell  —  导出 Simulink 模型包", shown), FPS // 2, tmp)
+    for line in [item for item in lines if item.strip()][:6] + [""] + ["生成的文件:", ] + ["  " + g for g in generated]:
+        for part in wrap(line):
+            shown.append(part)
+            emit(frames, terminal_frame("PowerShell  —  导出 Simulink 模型包", shown),
+                 FPS // 3, tmp)
+    emit(frames, terminal_frame("PowerShell  —  导出 Simulink 模型包", shown,
+                                "MATLAB 里跑 build_rsw_arm6 即可得到真正的 .slx（实测 48 模块 / 48 连线）"),
+         FPS * 2, tmp)
+
+    if script_head:
+        head_shown = ["$ head build_rsw_arm6.m", ""] + script_head
+        emit(frames, terminal_frame("PowerShell  —  构建脚本（公开 API，非手写 .slx）", head_shown),
+             FPS * 3, tmp)
+
+    # ---- scene 13: summary ----------------------------------------------- #
     summary = slide_frame(
         "交付物",
         "全部由真实运行产生，可逐条复现",
@@ -325,7 +403,9 @@ def main() -> int:
          ("", FG),
          ("五种轮系：差速 / 阿克曼 / 麦轮 / 全向 / 滑移", FG),
          ("支持 URDF / MJCF / SDF / JSON + STL/OBJ 网格", FG),
-         ("72 个自动化测试通过 · 运行期零第三方依赖", GREEN),
+         ("三类机构：机械臂 / 螺旋桨 / 激光雷达", FG),
+         ("--simulink 导出 MATLAB 可直接生成的 .slx", ACCENT),
+         ("91 个自动化测试通过 · 运行期零第三方依赖", GREEN),
          ("还有本地 Web App：run-app.cmd 一键启动", ACCENT),
          ("无真值时不下绝对结论 —— 这是设计，不是缺陷", YELLOW)])
     emit(frames, summary, FPS * 6, tmp)
